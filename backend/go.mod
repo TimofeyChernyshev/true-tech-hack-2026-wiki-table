@@ -7,6 +7,7 @@ require (
 	github.com/gin-contrib/cors v1.7.7
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-resty/resty/v2 v2.17.2
+	github.com/joho/godotenv v1.5.1
 	github.com/oapi-codegen/runtime v1.4.0
 )
 

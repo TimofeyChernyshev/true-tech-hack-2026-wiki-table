@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v11"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -17,6 +18,8 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
+	_ = godotenv.Load()
+
 	var cfg Config
 
 	err := env.Parse(&cfg)
