@@ -3,7 +3,6 @@ package tableshttp
 import (
 	"context"
 	"fmt"
-	"log"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -101,7 +100,6 @@ func (s *Server) handleError(c *gin.Context, err error) {
 
 func (s *Server) Start() error {
 	addr := ":" + s.port
-	log.Printf("Starting HTTP server on %s", addr)
 	return s.router.Run(addr)
 }
 
