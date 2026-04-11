@@ -1,0 +1,14 @@
+package: mwsclient
+generate:
+  client: true
+  models: true
+  embedded-spec: false
+output: client.gen.go
+output-options:
+  skip-prune: true
+  include-tags:
+    - Datasheet - операции с таблицами
+    - Records - записи
+    - Fields - поля записей
+    - Spaces - Операции с пространством
+    - Nodes - Операции с элементами пространства
