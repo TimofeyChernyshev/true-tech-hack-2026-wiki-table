@@ -8,6 +8,7 @@ import (
 )
 
 type Config struct {
+	HTTPListenAddr       string        `env:"HTTP_LISTEN_ADDR" envDefault:":8080"`
 	MWSTablesBaseURL     string        `env:"MWS_TABLES_BASE_URL,required"`
 	MWSAPIKey            string        `env:"MWS_API_KEY,required"`
 	TablesRequestTimeout time.Duration `env:"MWS_TABLES_REQUEST_TIMEOUT" envDefault:"60s"`
