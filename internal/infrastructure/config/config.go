@@ -11,6 +11,9 @@ type Config struct {
 	MWSTablesBaseURL  string        `env:"MWS_TABLES_BASE_URL,required"`
 	MWSAPIKey         string        `env:"MWS_API_KEY,required"`
 	MWSRequestTimeout time.Duration `env:"MWS_TABLES_REQUEST_TIMEOUT" envDefault:"60s"`
+	AllowOrigins      []string      `env:"ALLOW_ORIGINS"`
+	HTTPPort          string        `env:"HTTP_PORT,required"`
+	HTTPReadTimeout   time.Duration `env:"HTTP_READ_TIMEOUT" envDefault:"15s"`
 }
 
 func Load() (*Config, error) {
