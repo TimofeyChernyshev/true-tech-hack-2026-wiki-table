@@ -1,0 +1,157 @@
+.wiki-editor-wrap {
+  margin-bottom: 28px;
+  border: 1px solid var(--dk-border, #e0e0e0);
+  border-radius: 8px;
+  background: var(--dk-bg, #fff);
+  min-height: 200px;
+}
+
+.wiki-editor-root .tiptap {
+  outline: none;
+  padding: 16px 18px 24px;
+  min-height: 180px;
+}
+
+.wiki-editor-prose {
+  font-family: var(--font-compact, system-ui, sans-serif);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--dk-text-primary, #1d2023);
+}
+
+.wiki-editor-prose p.is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--dk-text-tertiary, #969fa8);
+  pointer-events: none;
+  height: 0;
+}
+
+.wiki-editor-prose p {
+  margin: 0 0 0.6em;
+}
+
+.wiki-editor-prose h1,
+.wiki-editor-prose h2,
+.wiki-editor-prose h3 {
+  font-family: var(--font-wide, system-ui, sans-serif);
+  font-weight: 500;
+  line-height: 1.2;
+  margin: 0.75em 0 0.4em;
+}
+
+.wiki-editor-prose h1 {
+  font-size: 1.75rem;
+}
+
+.wiki-editor-prose h2 {
+  font-size: 1.4rem;
+}
+
+.wiki-editor-prose h3 {
+  font-size: 1.2rem;
+}
+
+.wiki-editor-prose ul,
+.wiki-editor-prose ol {
+  margin: 0.5em 0;
+  padding-left: 1.4em;
+}
+
+.wiki-editor-prose blockquote {
+  margin: 0.6em 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--dk-control-border, #d7d9dd);
+  color: var(--dk-text-tertiary, #969fa8);
+}
+
+.wiki-editor-prose pre {
+  margin: 0.75em 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #f6f8fa;
+  border: 1px solid var(--dk-border, #e0e0e0);
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-x: auto;
+}
+
+.wiki-editor-prose pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+.wiki-editor-prose code {
+  background: var(--dk-toolbar-bg, #f5f7fa);
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.wiki-editor-prose hr {
+  margin: 1em 0;
+  border: none;
+  border-top: 1px solid var(--dk-border, #e0e0e0);
+}
+
+/* Slash menu */
+.slash-menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 260px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--dk-bg, #fff);
+  border: 1px solid var(--dk-border, #e0e0e0);
+  border-radius: 8px;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.slash-menu--empty {
+  padding: 12px;
+}
+
+.slash-menu-empty {
+  font-size: 13px;
+  color: var(--dk-text-tertiary, #969fa8);
+}
+
+.slash-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-compact, system-ui, sans-serif);
+}
+
+.slash-menu-item:hover,
+.slash-menu-item.is-active {
+  background: var(--dk-toolbar-bg, #f5f7fa);
+}
+
+.slash-menu-item-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dk-text-primary, #1d2023);
+}
+
+.slash-menu-item-sub {
+  font-size: 12px;
+  color: var(--dk-text-tertiary, #969fa8);
+}
+
+.tippy-box[data-theme~=''] {
+  background: transparent;
+}

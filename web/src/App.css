@@ -1,85 +1,245 @@
-.app {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px 20px 48px;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  color: #1a1a1a;
+/* Оболочка по макету Figma «23» (Базовое взаимодействие), node 1:19397 */
+.wiki-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  background: var(--dk-bg);
+  color: var(--dk-text-primary);
 }
 
-.header h1 {
-  margin: 0 0 8px;
-  font-size: 1.5rem;
-  font-weight: 650;
+.wiki-doc-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 16px;
+  border-bottom: 1px solid var(--dk-border);
+  flex-shrink: 0;
 }
 
-.subtitle {
+.wiki-doc-icon-wrap {
+  color: var(--dk-accent-icon);
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.wiki-doc-icon-svg {
+  display: block;
+}
+
+.wiki-doc-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: center;
+  font-family: var(--font-compact);
+  line-height: 20px;
+  font-size: 14px;
+}
+
+.wiki-doc-title {
+  color: var(--dk-text-primary);
+  font-weight: 400;
+}
+
+.wiki-doc-subtitle {
+  color: var(--dk-text-tertiary);
+  font-weight: 400;
+}
+
+.wiki-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 38px;
+  padding: 0 16px;
+  background: var(--dk-toolbar-bg);
+  border-bottom: 1px solid var(--dk-border);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.wiki-toolbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.tb-nav {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--dk-text-primary);
+  opacity: 0.55;
+  cursor: default;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.wiki-toolbar-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--dk-border);
+  flex-shrink: 0;
+}
+
+.wiki-toolbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  min-width: min-content;
+}
+
+.tb-gap {
+  width: 0;
+}
+
+.tb-group {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--dk-control-border);
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.tb-btn-on {
+  background: var(--dk-control-fill) !important;
+}
+
+.tb-btn {
+  width: 24px;
+  height: 24px;
   margin: 0;
-  color: #555;
-  font-size: 0.95rem;
+  padding: 0;
+  border: none;
+  border-right: 1px solid var(--dk-control-border);
+  background: var(--dk-bg);
+  color: var(--dk-text-primary);
+  font-size: 9px;
+  font-weight: 600;
+  font-family: var(--font-compact);
+  cursor: default;
+  opacity: 0.85;
 }
 
-.subtitle code {
-  font-size: 0.85em;
-  background: #f0f0f0;
-  padding: 2px 6px;
+.tb-btn:last-child {
+  border-right: none;
+}
+
+.wiki-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 56px 20px 48px;
+  box-sizing: border-box;
+}
+
+.wiki-main-inner {
+  width: 100%;
+  max-width: 700px;
+}
+
+.wiki-h1 {
+  margin: 0 0 24px;
+  font-family: var(--font-wide);
+  font-size: 36px;
+  font-weight: 500;
+  line-height: 40px;
+  letter-spacing: 0;
+  color: var(--dk-text-primary);
+}
+
+.wiki-lead {
+  margin: 0 0 32px;
+  font-family: var(--font-compact);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--dk-text-tertiary);
+}
+
+.wiki-kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 12px;
+  font-family: var(--mono, ui-monospace, monospace);
+  border: 1px solid var(--dk-control-border);
   border-radius: 4px;
+  background: var(--dk-toolbar-bg);
+  color: var(--dk-text-primary);
 }
 
-.form {
+.form-panel {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
   align-items: flex-end;
-  margin: 24px 0;
+  margin-bottom: 24px;
   padding: 16px;
-  background: #f7f7f8;
+  background: var(--dk-toolbar-bg);
+  border: 1px solid var(--dk-border);
   border-radius: 8px;
-  border: 1px solid #e2e2e5;
 }
 
 .field {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-width: 200px;
-  flex: 1 1 180px;
+  min-width: 160px;
+  flex: 1 1 160px;
 }
 
 .field.narrow {
-  flex: 0 0 100px;
-  min-width: 80px;
+  flex: 0 0 88px;
+  min-width: 72px;
 }
 
 .field span {
-  font-size: 0.8rem;
+  font-size: 12px;
   font-weight: 600;
-  color: #444;
+  color: var(--dk-text-tertiary);
+  font-family: var(--font-compact);
 }
 
 .field input {
   padding: 8px 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--dk-control-border);
   border-radius: 6px;
-  font-size: 0.95rem;
+  font-size: 14px;
+  font-family: var(--font-compact);
+  background: var(--dk-bg);
+  color: var(--dk-text-primary);
+}
+
+.field input:focus {
+  outline: 2px solid rgba(227, 6, 19, 0.35);
+  outline-offset: 1px;
 }
 
 .primary {
-  padding: 10px 20px;
-  font-size: 0.95rem;
+  padding: 8px 18px;
+  height: 36px;
+  font-size: 14px;
   font-weight: 600;
+  font-family: var(--font-compact);
   color: #fff;
-  background: #2563eb;
+  background: var(--dk-accent-icon);
   border: none;
   border-radius: 6px;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .primary:hover:not(:disabled) {
-  background: #1d4ed8;
+  filter: brightness(0.92);
 }
 
 .primary:disabled {
-  opacity: 0.65;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
@@ -87,6 +247,8 @@
   padding: 12px 14px;
   border-radius: 6px;
   margin-bottom: 16px;
+  font-size: 14px;
+  font-family: var(--font-compact);
 }
 
 .banner.error {
@@ -97,41 +259,43 @@
 
 .result .meta {
   margin-bottom: 12px;
-  font-size: 0.9rem;
+  font-size: 14px;
+  font-family: var(--font-compact);
+  color: var(--dk-text-primary);
 }
 
 .result .meta code {
-  background: #f0f0f0;
-  padding: 1px 5px;
-  border-radius: 3px;
-  font-size: 0.85em;
+  font-size: 12px;
 }
 
 .table-wrap {
   overflow-x: auto;
-  border: 1px solid #e2e2e5;
+  border: 1px solid var(--dk-border);
   border-radius: 8px;
   margin-bottom: 20px;
+  background: var(--dk-bg);
 }
 
 .grid {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: 13px;
+  font-family: var(--font-compact);
 }
 
 .grid th,
 .grid td {
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--dk-border);
   padding: 8px 10px;
   text-align: left;
   vertical-align: top;
 }
 
 .grid th {
-  background: #fafafa;
+  background: var(--dk-toolbar-bg);
   font-weight: 600;
   white-space: nowrap;
+  color: var(--dk-text-primary);
 }
 
 .grid tr:last-child td {
@@ -139,12 +303,12 @@
 }
 
 .mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.8rem;
+  font-family: var(--mono);
+  font-size: 12px;
 }
 
 .muted {
-  color: #666;
+  color: var(--dk-text-tertiary);
 }
 
 .json-preview {
@@ -153,7 +317,19 @@
   background: #1e1e1e;
   color: #d4d4d4;
   border-radius: 8px;
-  font-size: 0.75rem;
+  font-size: 12px;
+  font-family: var(--mono);
   overflow-x: auto;
   max-height: 320px;
+}
+
+@media (max-width: 640px) {
+  .wiki-h1 {
+    font-size: 28px;
+    line-height: 32px;
+  }
+
+  .wiki-main {
+    padding-top: 32px;
+  }
 }
