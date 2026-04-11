@@ -62,6 +62,7 @@ func NewServer(tableService TableService, allowOrigins []string, port string, re
 func (s *Server) registerRoutes() {
 	// Health check
 	s.router.GET("/health", s.healthCheck)
+	s.router.HEAD("/health", s.healthCheck)
 
 	// API v1 группа
 	v1 := s.router.Group("/api/v1")
