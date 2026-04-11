@@ -1,4 +1,4 @@
-package frontendhttp
+package tableshttp
 
 import (
 	"context"
