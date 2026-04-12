@@ -16,6 +16,15 @@ type TableClient interface {
 
 	// GetTableRecords получает записи таблицы
 	GetTableRecords(ctx context.Context, dstID, viewID string, pageNum, pageSize int) ([]domain.TableRecord, int, error)
+
+	// CreateRecords создает новые записи в таблице
+	CreateRecords(ctx context.Context, dstID, viewID string, records []domain.RecordFields) ([]domain.TableRecord, error)
+
+	// UpdateRecords обновляет существующие записи в таблице
+	UpdateRecords(ctx context.Context, dstID, viewID string, records []domain.RecordUpdate) ([]domain.TableRecord, error)
+
+	// DeleteRecords удаляет записи из таблицы
+	DeleteRecords(ctx context.Context, dstID string, recordIDs []string) error
 }
 
 type TableService struct {
@@ -61,4 +70,39 @@ func (s *TableService) GetTableData(ctx context.Context, dstID, viewID string, p
 			HasMore:  hasMore,
 		},
 	}, nil
+}
+
+// CreateRecords создает новые записи в таблице
+func (s *TableService) CreateRecords(ctx context.Context, dstID string, viewID string, records []domain.RecordFields) ([]domain.TableRecord, error) {
+	slog.Debug("Creating records", "dstId", dstID, "viewId", viewID, "count", len(records))
+
+	createdRecords, err := s.tableClient.CreateRecords(ctx, dstID, viewID, records)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create records: %w", err)
+	}
+
+	return createdRecords, nil
+}
+
+// UpdateRecords обновляет существующие записи в таблице
+func (s *TableService) UpdateRecords(ctx context.Context, dstID string, viewID string, records []domain.RecordUpdate) ([]domain.TableRecord, error) {
+	slog.Debug("Updating records", "dstId", dstID, "viewId", viewID, "count", len(records))
+
+	updatedRecords, err := s.tableClient.UpdateRecords(ctx, dstID, viewID, records)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update records: %w", err)
+	}
+
+	return updatedRecords, nil
+}
+
+// DeleteRecords удаляет записи из таблицы
+func (s *TableService) DeleteRecords(ctx context.Context, dstID string, recordIDs []string) error {
+	slog.Debug("Deleting records", "dstId", dstID, "count", len(recordIDs))
+
+	if err := s.tableClient.DeleteRecords(ctx, dstID, recordIDs); err != nil {
+		return fmt.Errorf("failed to delete records: %w", err)
+	}
+
+	return nil
 }
