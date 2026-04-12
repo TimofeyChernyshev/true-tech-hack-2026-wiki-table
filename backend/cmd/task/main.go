@@ -30,7 +30,7 @@ func main() {
 
 	tableService := application.NewTableService(mwsClient)
 
-	server := tableshttp.NewServer(tableService, cfg.AllowOrigins, cfg.HTTPPort, cfg.HTTPReadTimeout)
+	server := tableshttp.NewServer(tableService, cfg.AllowOrigins, cfg.HTTPPort, cfg.HTTPReadTimeout, cfg.WikiDataDir)
 	serverErr := make(chan error, 1)
 	go func() {
 		slog.Info("starting HTTP server", "port", cfg.HTTPPort)

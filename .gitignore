@@ -29,6 +29,10 @@ go.work.sum
 .env
 .env.*
 docs/
+backend/data/
+
 # Editor/IDE
 # .idea/
 # .vscode/
+web/package-lock.json
+

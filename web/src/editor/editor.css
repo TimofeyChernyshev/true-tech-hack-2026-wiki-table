@@ -1,8 +1,8 @@
 .wiki-editor-wrap {
   margin-bottom: 28px;
-  border: 1px solid var(--dk-border, #e0e0e0);
-  border-radius: 8px;
-  background: var(--dk-bg, #fff);
+  border: none;
+  border-radius: 0;
+  background: #fff;
   min-height: 200px;
 }
 
@@ -10,6 +10,53 @@
   outline: none;
   padding: 16px 18px 24px;
   min-height: 180px;
+}
+
+.wiki-editor-loading {
+  padding: 16px 18px 24px;
+  min-height: 180px;
+  font-size: 14px;
+  color: var(--dk-text-tertiary, #969fa8);
+}
+
+.wiki-editor-prose,
+.wiki-editor-prose .ProseMirror {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.wiki-bubble-menu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--dk-bg, #fff);
+  border: 1px solid var(--dk-border, #e0e0e0);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  z-index: 50;
+}
+
+.wiki-bubble-btn {
+  min-width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-compact, system-ui, sans-serif);
+  color: var(--dk-text-primary, #1d2023);
+  cursor: pointer;
+  opacity: 0.88;
+}
+
+.wiki-bubble-btn:hover {
+  background: var(--dk-toolbar-bg, #f5f7fa);
+  opacity: 1;
 }
 
 .wiki-editor-prose {
@@ -96,6 +143,14 @@
   border-top: 1px solid var(--dk-border, #e0e0e0);
 }
 
+.wiki-editor-prose img.wiki-editor-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 0.5em 0;
+  display: block;
+}
+
 /* Slash menu */
 .slash-menu {
   display: flex;
@@ -155,3 +210,79 @@
 .tippy-box[data-theme~=''] {
   background: transparent;
 }
+
+/* Таблицы Tiptap */
+.wiki-editor-prose .tableWrapper {
+  margin: 0.75em 0;
+  overflow-x: auto;
+  max-width: 100%;
+  width: 100%;
+}
+
+.wiki-editor-prose table.wiki-tiptap-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14px;
+  border: 1px solid var(--dk-border, #e0e0e0);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.wiki-editor-prose table.wiki-tiptap-table td,
+.wiki-editor-prose table.wiki-tiptap-table th {
+  border: 1px solid var(--dk-border, #e0e0e0);
+  padding: 8px 10px;
+  vertical-align: top;
+  min-width: 64px;
+}
+
+.wiki-editor-prose table.wiki-tiptap-table th {
+  background: var(--dk-toolbar-bg, #f5f7fa);
+  font-weight: 600;
+}
+
+/* Сетка в духе MWS Tables (вставка со ссылки workbench) */
+.wiki-editor-prose table.wiki-tiptap-table[data-mws-dst-id] {
+  font-size: 13px;
+  line-height: 1.45;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.wiki-editor-prose table.wiki-tiptap-table[data-mws-dst-id] th {
+  background: #fafafa;
+  font-weight: 500;
+  color: #333;
+  border-color: #e8e8e8;
+}
+
+.wiki-editor-prose table.wiki-tiptap-table[data-mws-dst-id] td {
+  border-color: #e8e8e8;
+  color: #1a1a1a;
+}
+
+.wiki-editor-prose table.wiki-tiptap-table[data-mws-dst-id] tr:nth-child(n + 2):nth-child(even) td {
+  background: #fafafa;
+}
+
+.wiki-editor-prose table.wiki-tiptap-table[data-mws-dst-id] tr:nth-child(n + 2):nth-child(odd) td {
+  background: #fff;
+}
+
+.wiki-editor-prose table.wiki-tiptap-table .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: '';
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(227, 6, 19, 0.08);
+  pointer-events: none;
+}
+
+.wiki-editor-prose table.wiki-tiptap-table p {
+  margin: 0;
+}
+

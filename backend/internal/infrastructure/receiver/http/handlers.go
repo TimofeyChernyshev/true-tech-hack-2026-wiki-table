@@ -42,6 +42,7 @@ func (s *Server) GetTablesDstIdRecords(c *gin.Context, dstID string, params GetT
 	tableData, err := s.tableService.GetTableData(c.Request.Context(), dstID, viewID, pageNum, pageSize)
 	if err != nil {
 		s.handleError(c, err)
+		return
 	}
 
 	c.JSON(http.StatusOK, convertToTableDataResponse(tableData))

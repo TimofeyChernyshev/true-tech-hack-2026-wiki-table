@@ -1,0 +1,307 @@
+import type { ReactNode } from 'react'
+import type { Editor } from '@tiptap/react'
+import { redo, redoDepth, undo, undoDepth } from '@tiptap/pm/history'
+
+type Props = {
+  editor: Editor | null
+  onInsertImageFile?: () => void
+  onOpenComments?: () => void
+  onOpenCommentHistory?: () => void
+  onOpenCommentAccess?: () => void
+  onOpenTimeMachine?: () => void
+}
+
+function TbBtn({
+  onClick,
+  active,
+  disabled,
+  title,
+  children,
+}: {
+  onClick: () => void
+  active?: boolean
+  disabled?: boolean
+  title: string
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      className={`tb-btn${active ? ' tb-btn-on' : ''}`}
+      disabled={disabled}
+      title={title}
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  )
+}
+
+export function WikiToolbar({
+  editor,
+  onInsertImageFile,
+  onOpenComments,
+  onOpenCommentHistory,
+  onOpenCommentAccess,
+  onOpenTimeMachine,
+}: Props) {
+  const ed = editor
+
+  return (
+    <div className="wiki-toolbar" role="toolbar" aria-label="Форматирование">
+      <div className="wiki-toolbar-nav">
+        <button
+          type="button"
+          className="tb-nav"
+          disabled={!ed || undoDepth(ed.state) === 0}
+          title="Отменить (Ctrl+Z)"
+          aria-label="Отменить"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            if (!ed) return
+            undo(ed.state, ed.view.dispatch)
+          }}
+        >
+          ↶
+        </button>
+        <button
+          type="button"
+          className="tb-nav"
+          disabled={!ed || redoDepth(ed.state) === 0}
+          title="Повторить (Ctrl+Y / Ctrl+Shift+Z)"
+          aria-label="Повторить"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            if (!ed) return
+            redo(ed.state, ed.view.dispatch)
+          }}
+        >
+          ↷
+        </button>
+      </div>
+      <div className="wiki-toolbar-sep" aria-hidden />
+      <div className="wiki-toolbar-inner">
+        <div className="tb-group">
+          <TbBtn
+            title="Жирный"
+            active={ed?.isActive('bold')}
+            disabled={!ed || !ed.can().toggleBold()}
+            onClick={() => ed?.chain().focus().toggleBold().run()}
+          >
+            B
+          </TbBtn>
+          <TbBtn
+            title="Курсив"
+            active={ed?.isActive('italic')}
+            disabled={!ed}
+            onClick={() => ed?.chain().focus().toggleItalic().run()}
+          >
+            I
+          </TbBtn>
+          <TbBtn
+            title="Подчёркнутый"
+            active={ed?.isActive('underline')}
+            disabled={!ed}
+            onClick={() => ed?.chain().focus().toggleUnderline().run()}
+          >
+            U
+          </TbBtn>
+          <TbBtn
+            title="Зачёркнутый"
+            active={ed?.isActive('strike')}
+            disabled={!ed}
+            onClick={() => ed?.chain().focus().toggleStrike().run()}
+          >
+            S
+          </TbBtn>
+        </div>
+        <div className="tb-group tb-group--compact" role="group" aria-label="Выравнивание">
+          <TbBtn
+            title="Влево"
+            active={ed?.isActive({ textAlign: 'left' })}
+            disabled={!ed}
+            onClick={() => ed?.chain().focus().setTextAlign('left').run()}
+          >
+            L
+          </TbBtn>
+          <TbBtn
+            title="По центру"
+            active={ed?.isActive({ textAlign: 'center' })}
+            disabled={!ed}
+            onClick={() => ed?.chain().focus().setTextAlign('center').run()}
+          >
+            C
+          </TbBtn>
+          <TbBtn
+            title="Вправо"
+            active={ed?.isActive({ textAlign: 'right' })}
+            disabled={!ed}
+            onClick={() => ed?.chain().focus().setTextAlign('right').run()}
+          >
+            R
+          </TbBtn>
+          <TbBtn
+            title="По ширине"
+            active={ed?.isActive({ textAlign: 'justify' })}
+            disabled={!ed}
+            onClick={() => ed?.chain().focus().setTextAlign('justify').run()}
+          >
+            J
+          </TbBtn>
+        </div>
+        <div className="tb-group">
+          <TbBtn
+            title="Заголовок 1"
+            active={ed?.isActive('heading', { level: 1 })}
+            disabled={!ed}
+            onClick={() => ed?.chain().focus().toggleHeading({ level: 1 }).run()}
+          >
+            H1
+          </TbBtn>
+          <TbBtn
+            title="Заголовок 2"
+            active={ed?.isActive('heading', { level: 2 })}
+            disabled={!ed}
+            onClick={() => ed?.chain().focus().toggleHeading({ level: 2 }).run()}
+          >
+            H2
+          </TbBtn>
+          <TbBtn
+            title="Заголовок 3"
+            active={ed?.isActive('heading', { level: 3 })}
+            disabled={!ed}
+            onClick={() => ed?.chain().focus().toggleHeading({ level: 3 }).run()}
+          >
+            H3
+          </TbBtn>
+        </div>
+        <div className="tb-group">
+          <TbBtn
+            title="Маркированный список"
+            active={ed?.isActive('bulletList')}
+            disabled={!ed}
+            onClick={() => ed?.chain().focus().toggleBulletList().run()}
+          >
+            •
+          </TbBtn>
+          <TbBtn
+            title="Нумерованный список"
+            active={ed?.isActive('orderedList')}
+            disabled={!ed}
+            onClick={() => ed?.chain().focus().toggleOrderedList().run()}
+          >
+            1.
+          </TbBtn>
+          <TbBtn
+            title="Цитата"
+            active={ed?.isActive('blockquote')}
+            disabled={!ed}
+            onClick={() => ed?.chain().focus().toggleBlockquote().run()}
+          >
+            ❝
+          </TbBtn>
+        </div>
+        <div className="tb-group">
+          <TbBtn
+            title="Блок кода"
+            active={ed?.isActive('codeBlock')}
+            disabled={!ed}
+            onClick={() => ed?.chain().focus().toggleCodeBlock({ language: 'javascript' }).run()}
+          >
+            {'</>'}
+          </TbBtn>
+          <TbBtn
+            title="Горизонтальная линия"
+            disabled={!ed}
+            onClick={() => ed?.chain().focus().setHorizontalRule().run()}
+          >
+            —
+          </TbBtn>
+          <TbBtn
+            title="Таблица 3×3"
+            disabled={!ed}
+            onClick={() =>
+              ed?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+            }
+          >
+            ⊞
+          </TbBtn>
+        </div>
+        <div className="tb-group">
+          <TbBtn
+            title="Ссылка"
+            active={ed?.isActive('link')}
+            disabled={!ed}
+            onClick={() => {
+              const prev = ed?.getAttributes('link').href as string | undefined
+              const url = window.prompt('URL ссылки', prev ?? 'https://')
+              if (url === null) return
+              if (url === '') {
+                ed?.chain().focus().extendMarkRange('link').unsetLink().run()
+                return
+              }
+              ed?.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+            }}
+          >
+            🔗
+          </TbBtn>
+          <TbBtn
+            title="Изображение (файл PNG/JPG/GIF)"
+            disabled={!ed || !onInsertImageFile}
+            onClick={() => onInsertImageFile?.()}
+          >
+            🖼
+          </TbBtn>
+        </div>
+      </div>
+
+      <div className="wiki-toolbar-side" role="group" aria-label="Комментарии и версии">
+        {onOpenComments ? (
+          <button
+            type="button"
+            className="tb-side"
+            title="Комментарии"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={onOpenComments}
+          >
+            💬
+          </button>
+        ) : null}
+        {onOpenCommentHistory ? (
+          <button
+            type="button"
+            className="tb-side"
+            title="История комментариев"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={onOpenCommentHistory}
+          >
+            📜
+          </button>
+        ) : null}
+        {onOpenCommentAccess ? (
+          <button
+            type="button"
+            className="tb-side"
+            title="Доступ к комментариям"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={onOpenCommentAccess}
+          >
+            🔐
+          </button>
+        ) : null}
+        {onOpenTimeMachine ? (
+          <button
+            type="button"
+            className="tb-side"
+            title="Машина времени"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={onOpenTimeMachine}
+          >
+            🕐
+          </button>
+        ) : null}
+      </div>
+    </div>
+  )
+}

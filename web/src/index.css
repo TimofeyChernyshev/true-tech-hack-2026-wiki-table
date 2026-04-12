@@ -9,6 +9,16 @@
   --dk-bg: #ffffff;
   --dk-accent-icon: #e30613;
 
+  /* UI kit из Figma (раздел «Комментарии», MCP) */
+  --ui-bg-secondary: #f6f7fa;
+  --ui-line-light: #e0e3e9;
+  --ui-text-primary-ui: #282c33;
+  --ui-text-secondary: #6d7482;
+  --ui-action: #907ff0;
+  --ui-avatar-blue: #7eb8da;
+  --ui-avatar-violet: #b8a6f0;
+  --ui-shadow-popover: 0 0 16px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.08);
+
   --font-compact: 'MTS Compact', 'MTS Text', system-ui, -apple-system, 'Segoe UI', Roboto,
     sans-serif;
   --font-wide: 'MTS Wide', 'MTS Compact', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;

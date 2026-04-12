@@ -56,7 +56,14 @@ func (s *TableService) GetTableData(ctx context.Context, dstID, viewID string, p
 		return nil, fmt.Errorf("failed to get table records: %w", err)
 	}
 
-	hasMore := pageNum*pageSize < total
+	recordCount := len(records)
+	hasMore := false
+	if total > 0 {
+		hasMore = pageNum*pageSize < total
+	} else {
+		// Fusion иногда не возвращает total — догружаем страницы, пока приходит полный pageSize.
+		hasMore = recordCount >= pageSize
+	}
 
 	return &domain.TableData{
 		TableID:   dstID,

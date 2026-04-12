@@ -1,9 +1,4 @@
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useState,
-} from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import type { SuggestionKeyDownProps, SuggestionProps } from '@tiptap/suggestion'
 import type { SlashItem } from './slashItems'
 
@@ -21,6 +16,8 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
     const [selected, setSelected] = useState(0)
 
     useEffect(() => {
+      // Сброс выделения при смене списка slash-команд (фильтр по запросу)
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- намеренный сброс UI при изменении items
       setSelected(0)
     }, [items])
 

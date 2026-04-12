@@ -55,9 +55,11 @@ func (h *TableRecordsHandler) ServeGetTableRecords(w http.ResponseWriter, r *htt
 		maxRecords = &n
 	}
 
+	fk := mwsclient.GetFusionV1DatasheetsDstIdRecordsParamsFieldKeyName
 	params := &mwsclient.GetFusionV1DatasheetsDstIdRecordsParams{
 		PageNum:  &pageNum,
 		PageSize: &pageSize,
+		FieldKey: &fk,
 	}
 	if viewID != "" {
 		params.ViewId = &viewID
