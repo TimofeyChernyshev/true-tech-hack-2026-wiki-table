@@ -1458,7 +1458,7 @@ components:
                 type: string
                 description: "Идентификатор записи"
               fields:
-                $ref: '#/components/schemas/ExampleFieldToUpdate'
+                type: object
           description: "Массив записей"
         fieldKey:
           type: string

@@ -25,3 +25,9 @@ docker-compose up --build
 ``` shell
 go run backend/cmd/task/main.go
 ```
+
+# Изменения в API спецификации mws tables
+
+в [файле, где описана спецификация](backend/internal/infrastructure/mws_client/FUSION-API.yaml) допущена ошибка: `PATCH` запрос к /fusion/v1/datasheets/{dstID}/records требует в теле запроса `UpdateRecordsRequest` поле `fields`, который ссылается на `ExampleFieldToUpdate`. 
+
+В других запросах для обозначения `fields` используется просто `type: object`. Для корректного обращения к API MWS tables `UpdateRecordsRequest` был изменен

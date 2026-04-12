@@ -1250,7 +1250,7 @@ type UpdateRecordsRequest struct {
 
 	// Records Массив записей
 	Records []struct {
-		Fields *ExampleFieldToUpdate `json:"fields,omitempty"`
+		Fields *map[string]interface{} `json:"fields,omitempty"`
 
 		// RecordId Идентификатор записи
 		RecordId *string `json:"recordId,omitempty"`
