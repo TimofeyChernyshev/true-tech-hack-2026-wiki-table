@@ -11,20 +11,17 @@ type TableClient interface {
 	// GetTableInfo получает информацию о таблице по её ID
 	GetTableInfo(ctx context.Context, dstID string) (*domain.TableInfo, error)
 
-	// GetTableFields получает поля таблицы
-	GetTableFields(ctx context.Context, dstID, viewID string) ([]domain.TableField, error)
-
-	// GetTableRecords получает записи таблицы
+	// Операции с записями
 	GetTableRecords(ctx context.Context, dstID, viewID string, pageNum, pageSize int) ([]domain.TableRecord, int, error)
-
-	// CreateRecords создает новые записи в таблице
 	CreateRecords(ctx context.Context, dstID, viewID string, records []domain.RecordFields) ([]domain.TableRecord, error)
-
-	// UpdateRecords обновляет существующие записи в таблице
 	UpdateRecords(ctx context.Context, dstID, viewID string, records []domain.RecordUpdate) ([]domain.TableRecord, error)
-
-	// DeleteRecords удаляет записи из таблицы
 	DeleteRecords(ctx context.Context, dstID string, recordIDs []string) error
+
+	// Операции с полями
+	GetTableFields(ctx context.Context, dstID, viewID string) ([]domain.TableField, error)
+	CreateField(ctx context.Context, spaceID, dstID, fieldName string, fieldType domain.FieldType, fieldProperty domain.FieldProperty) (*domain.TableField, error)
+	UpdateFieldIndex(ctx context.Context, dstID, viewID, fieldID string, index int) error
+	DeleteField(ctx context.Context, spaceID, dstID, fieldID string) error
 }
 
 type TableService struct {
@@ -102,6 +99,40 @@ func (s *TableService) DeleteRecords(ctx context.Context, dstID string, recordID
 
 	if err := s.tableClient.DeleteRecords(ctx, dstID, recordIDs); err != nil {
 		return fmt.Errorf("failed to delete records: %w", err)
+	}
+
+	return nil
+}
+
+// CreateField создает новое поле в таблице
+func (s *TableService) CreateField(ctx context.Context, spaceID, dstID, fieldName string, fieldType domain.FieldType, fieldProperty domain.FieldProperty) (*domain.TableField, error) {
+	slog.Debug("Creating field", "spaceId", spaceID, "dstId", dstID, "name", fieldName, "type", fieldType)
+
+	field, err := s.tableClient.CreateField(ctx, spaceID, dstID, fieldName, fieldType, fieldProperty)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create field: %w", err)
+	}
+
+	return field, nil
+}
+
+// DeleteField удаляет поле из таблицы
+func (s *TableService) DeleteField(ctx context.Context, spaceID, dstID, fieldID string) error {
+	slog.Debug("Deleting field", "spaceId", spaceID, "dstId", dstID, "fieldId", fieldID)
+
+	if err := s.tableClient.DeleteField(ctx, spaceID, dstID, fieldID); err != nil {
+		return fmt.Errorf("failed to delete field: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateFieldIndex изменяет порядок поля в представлении
+func (s *TableService) UpdateFieldIndex(ctx context.Context, dstID, viewID, fieldID string, index int) error {
+	slog.Debug("Updating field index", "dstId", dstID, "viewId", viewID, "fieldId", fieldID, "index", index)
+
+	if err := s.tableClient.UpdateFieldIndex(ctx, dstID, viewID, fieldID, index); err != nil {
+		return fmt.Errorf("failed to update field index: %w", err)
 	}
 
 	return nil
