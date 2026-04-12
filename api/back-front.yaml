@@ -182,6 +182,130 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /tables/{dstId}/fields:
+    post:
+      summary: Создать поле в таблице
+      tags:
+        - tables
+      parameters:
+        - name: dstId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: spaceId
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFieldRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FieldResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tables/{dstId}/fields/{fieldId}:
+    delete:
+      summary: Удалить поле из таблицы
+      tags:
+        - tables
+      parameters:
+        - name: dstId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fieldId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: spaceId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /tables/{dstId}/views/{viewId}/fields/{fieldId}/index:
+    patch:
+      summary: Изменить порядок поля в представлении
+      tags:
+        - tables
+      parameters:
+        - name: dstId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: viewId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fieldId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - index
+              properties:
+                index:
+                  type: integer
+                  minimum: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     
@@ -359,4 +483,56 @@ components:
         message:
           type: string
         details:
+          type: string
+
+    FieldResponse:
+      type: object
+      required:
+        - id
+        - name
+        - type
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+
+    CreateFieldRequest:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        type:
+          type: string
+          enum:
+            - SingleText
+            - Text
+            - SingleSelect
+            - MultiSelect
+            - Number
+            - Currency
+            - Percent
+            - DateTime
+            - Attachment
+            - Member
+            - Checkbox
+            - Rating
+            - URL
+            - Phone
+            - Email
+        property:
+          type: object
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
           type: string
