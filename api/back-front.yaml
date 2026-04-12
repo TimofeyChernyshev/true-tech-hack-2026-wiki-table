@@ -1,84 +1,182 @@
 openapi: 3.0.0
 info:
   title: Wiki Editor Backend API
-  description: API для внутреннего взаимодействия фронтенда вики-редактора с бэкендом.
   version: 1.0.0
 
 servers:
   - url: /api/v1
-    description: API вики-редактора
 
 paths:
   /tables/{dstId}/records:
     get:
-      summary: Получить записи таблицы для отображения в редакторе
-      description: Возвращает постраничный список записей из указанной таблицы.
+      summary: Получить записи таблицы
       tags:
-        - wiki-tables
+        - tables
       parameters:
         - name: dstId
           in: path
-          description: Идентификатор таблицы (datasheet) в MWS Tables
           required: true
           schema:
             type: string
-            example: 'dstFiaiw12AA'
         - name: viewId
           in: query
-          description: ID представления для фильтрации и сортировки записей
           required: false
           schema:
             type: string
-            example: 'viwG9l1VPD6nH'
         - name: pageSize
           in: query
-          description: Количество записей на странице
           required: false
           schema:
             type: integer
             minimum: 1
-            maximum: 150
-            default: 100
-            example: 100
-        - name: maxRecords
-          in: query
-          description: Максимальное общее количество записей для возврата (альтернатива pageSize)
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 1000
-            example: 200
+            maximum: 100
+            default: 50
         - name: pageNum
           in: query
-          description: Номер страницы (начинается с 1)
           required: false
           schema:
             type: integer
             minimum: 1
             default: 1
-            example: 1
       responses:
         '200':
-          description: Успешный ответ с данными таблицы
+          description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TableRecordsResponse'
+                $ref: '#/components/schemas/TableDataResponse'
         '400':
-          description: Невалидные параметры запроса
+          description: Bad Request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Таблица или представление не найдены
+          description: Not Found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Внутренняя ошибка сервера
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Создать записи в таблице
+      tags:
+        - tables
+      parameters:
+        - name: dstId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: viewId
+          in: query
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRecordsRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordsResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      summary: Обновить записи в таблице
+      tags:
+        - tables
+      parameters:
+        - name: dstId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: viewId
+          in: query
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRecordsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordsResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Удалить записи из таблицы
+      tags:
+        - tables
+      parameters:
+        - name: dstId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteRecordsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteRecordsResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
           content:
             application/json:
               schema:
@@ -86,27 +184,130 @@ paths:
 
 components:
   schemas:
-    TableRecordsResponse:
+    
+    CreateRecordsRequest:
       type: object
       required:
-        - pageNum
-        - pageSize
         - records
       properties:
-        pageNum:
-          type: integer
-          description: Текущий номер страницы
-          minimum: 1
-          example: 1
-        pageSize:
-          type: integer
-          description: Фактический размер страницы
-          example: 50
         records:
           type: array
-          description: Массив записей таблицы
+          minItems: 1
+          items:
+            type: object
+            required:
+              - fields
+            properties:
+              fields:
+                type: object
+                additionalProperties: true
+                description: Ключи - имена полей, значения - данные для записи
+
+    UpdateRecordsRequest:
+      type: object
+      required:
+        - records
+      properties:
+        records:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required:
+              - recordId
+              - fields
+            properties:
+              recordId:
+                type: string
+              fields:
+                type: object
+                additionalProperties: true
+
+    DeleteRecordsRequest:
+      type: object
+      required:
+        - recordIds
+      properties:
+        recordIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+
+    TableDataResponse:
+      type: object
+      required:
+        - tableId
+        - fields
+        - records
+        - pagination
+      properties:
+        tableId:
+          type: string
+        tableName:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/TableField'
+        records:
+          type: array
           items:
             $ref: '#/components/schemas/TableRecord'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    RecordsResponse:
+      type: object
+      required:
+        - records
+      properties:
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/TableRecord'
+
+    DeleteRecordsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    TableField:
+      type: object
+      required:
+        - id
+        - name
+        - type
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - SingleText
+            - Text
+            - SingleSelect
+            - MultiSelect
+            - Number
+            - Currency
+            - Percent
+            - DateTime
+            - Attachment
+            - Member
+            - Checkbox
+            - Rating
+            - URL
+            - Phone
+            - Email
+        description:
+          type: string
+        property:
+          type: object
 
     TableRecord:
       type: object
@@ -116,30 +317,36 @@ components:
       properties:
         recordId:
           type: string
-          description: Уникальный идентификатор записи
-          example: 'recwZ6yV3Srv3'
         fields:
           type: object
-          description: >
-            Объект, содержащий значения полей записи.
-            Ключи - это ID полей (fldXXX) или их имена (Title, Status).
-            Значения зависят от типа поля (строка, число, массив для вложений и т.д.)
           additionalProperties: true
-          example:
-            Title: 'План разработки'
-            Status: 'В работе'
-            Assignee: 'Иван Петров'
-            DueDate: '2025-12-31'
         createdAt:
           type: integer
           format: int64
-          description: Unix timestamp (в миллисекундах) создания записи
-          example: 1735689600000
         updatedAt:
           type: integer
           format: int64
-          description: Unix timestamp (в миллисекундах) последнего обновления записи
-          example: 1738368000000
+
+    Pagination:
+      type: object
+      required:
+        - pageNum
+        - pageSize
+        - total
+        - hasMore
+      properties:
+        pageNum:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          minimum: 0
+        hasMore:
+          type: boolean
 
     ErrorResponse:
       type: object
@@ -149,13 +356,7 @@ components:
       properties:
         code:
           type: integer
-          description: Код ошибки
-          example: 404
         message:
           type: string
-          description: Cообщение об ошибке
-          example: 'Table with ID dstFiaiw12AA not found'
         details:
           type: string
-          description: Дополнительные технические детали
-          example: 'The specified datasheet does not exist in space spc123'
