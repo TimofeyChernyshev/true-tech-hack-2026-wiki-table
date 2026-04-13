@@ -16,6 +16,12 @@ export type AdvancedComment = {
 
 export type ThreadMeta = {
   id: string
+  /** Привязка к data-comment-anchor абзаца; `__page__` — обсуждения со страницы (шапка). */
+  anchorKey?: string | null
+  /** Фрагмент текста блока при создании ветки. */
+  contextExcerpt?: string | null
+  /** Пользовательское имя ветки (список и шапка). */
+  threadTitle?: string | null
   resolved: boolean
   resolvedAt?: number
   deleted?: boolean

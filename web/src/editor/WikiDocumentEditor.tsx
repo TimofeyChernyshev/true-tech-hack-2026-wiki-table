@@ -24,6 +24,15 @@ import { ImageInsertModal } from './ImageInsertModal'
 
 import { TimeMachineModal } from './TimeMachineModal'
 
+import { WikiImageBubbleMenu } from './WikiImageBubbleMenu'
+
+import {
+  parsePageKeyFromHref,
+  scheduleBacklinksReindex,
+  WIKI_NAVIGATE_EVENT,
+  type WikiNavigateDetail,
+} from '../pages/wikiBacklinks'
+
 import {
 
   forceRecordDocVersion,
@@ -38,7 +47,9 @@ import { CommentAccessModal } from '../comments/CommentAccessModal'
 
 import { CommentHistoryModal } from '../comments/CommentHistoryModal'
 
-import { CommentsDrawer } from '../comments/CommentsDrawer'
+import { CommentsDrawer, type CommentsScope } from '../comments/CommentsDrawer'
+
+import { WIKI_COMMENT_GUTTER_REFRESH } from '../comments/commentScopeConstants'
 
 import {
 
@@ -49,6 +60,12 @@ import {
 } from '../comments/commentAdvancedStore'
 
 import type { CommentAccessMode } from '../comments/commentAdvancedTypes'
+
+import { CommentGutter, WIKI_COMMENT_OPEN_EVENT } from './commentGutter'
+
+import { MwsTableInsertModal } from './MwsTableInsertModal'
+
+import { ensureCommentAnchorAtPosition } from './wikiCommentAnchor'
 
 import 'tippy.js/dist/tippy.css'
 
@@ -101,8 +118,12 @@ function WikiDocumentEditorLoaded({
   const [ydoc] = useState(() => createWikiYDoc(pageKey, initialDoc, wikiBaseExtensions))
 
   const extensions = useMemo(
-    () => [...wikiBaseExtensions, Collaboration.configure({ document: ydoc })],
-    [ydoc],
+    () => [
+      ...wikiBaseExtensions,
+      CommentGutter.configure({ pageKey }),
+      Collaboration.configure({ document: ydoc }),
+    ],
+    [ydoc, pageKey],
   )
 
 
@@ -110,6 +131,10 @@ function WikiDocumentEditorLoaded({
   const [imageOpen, setImageOpen] = useState(false)
 
   const [commentsOpen, setCommentsOpen] = useState(false)
+
+  const [commentScope, setCommentScope] = useState<CommentsScope>({ mode: 'page' })
+
+  const [mwsOpen, setMwsOpen] = useState(false)
 
   const [historyOpen, setHistoryOpen] = useState(false)
 
@@ -125,8 +150,6 @@ function WikiDocumentEditorLoaded({
 
   const [hotkeysOpen, setHotkeysOpen] = useState(false)
 
-
-
   const flushSave = useCallback(
 
     (ed: Editor) => {
@@ -134,6 +157,8 @@ function WikiDocumentEditorLoaded({
       const json = ed.getJSON()
 
       persistWikiDocLocal(storageKey, json)
+
+      scheduleBacklinksReindex()
 
       maybeRecordDocVersion(storageKey, json)
 
@@ -169,6 +194,7 @@ function WikiDocumentEditorLoaded({
     (ed: Editor) => {
       const json = ed.getJSON()
       persistWikiDocLocal(storageKey, json)
+      scheduleBacklinksReindex()
       maybeRecordDocVersion(storageKey, json)
       try {
         localStorage.setItem(wikiYStateStorageKey(pageKey), encodeYDocBase64(ydoc))
@@ -183,6 +209,7 @@ function WikiDocumentEditorLoaded({
     (ed: Editor) => {
       const json = ed.getJSON()
       persistWikiDocLocal(storageKey, json)
+      scheduleBacklinksReindex()
       try {
         localStorage.setItem(wikiYStateStorageKey(pageKey), encodeYDocBase64(ydoc))
       } catch {
@@ -196,6 +223,39 @@ function WikiDocumentEditorLoaded({
   useEffect(() => {
     forceSaveAllRef.current = forceSaveAll
   }, [forceSaveAll])
+
+  const handleWikiClick = useCallback(
+    (view: { dom: HTMLElement }, _pos: number, event: MouseEvent) => {
+      const target = event.target as HTMLElement | null
+      if (!target) return false
+      const a = target.closest('a')
+      if (!a || !view.dom.contains(a)) return false
+      const href = a.getAttribute('href')
+      if (!href) return false
+      if (!event.ctrlKey && !event.metaKey) {
+        event.preventDefault()
+        return true
+      }
+      event.preventDefault()
+      const pageKey = parsePageKeyFromHref(href)
+      if (pageKey) {
+        window.dispatchEvent(
+          new CustomEvent<WikiNavigateDetail>(WIKI_NAVIGATE_EVENT, { detail: { pageKey } }),
+        )
+        return true
+      }
+      if (/^mailto:/i.test(href)) {
+        window.location.href = href
+        return true
+      }
+      if (/^https?:\/\//i.test(href) || href.startsWith('//')) {
+        window.open(href, '_blank', 'noopener,noreferrer')
+        return true
+      }
+      return true
+    },
+    [],
+  )
 
   const handleEditorKeyDown = useCallback((_view: unknown, event: Event) => {
     const e = event as KeyboardEvent
@@ -261,6 +321,8 @@ function WikiDocumentEditorLoaded({
 
       handleKeyDown: handleEditorKeyDown,
 
+      handleClick: handleWikiClick,
+
     },
 
     onUpdate: ({ editor: ed }) => {
@@ -268,6 +330,8 @@ function WikiDocumentEditorLoaded({
       const json = ed.getJSON()
 
       persistWikiDocLocal(storageKey, json)
+
+      scheduleBacklinksReindex()
 
       scheduleSave(ed)
 
@@ -290,6 +354,31 @@ function WikiDocumentEditorLoaded({
   }, [editor, autoSaveIntervalMs, runScheduledAutosave])
 
   useEffect(() => {
+    if (!editor) return
+    const dom = editor.view.dom
+    const onCap = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return
+      const mod = e.ctrlKey || e.metaKey
+      if (!mod || e.altKey) return
+      const k = e.key.toLowerCase()
+      if (!e.shiftKey && (k === 'b' || k === 'i' || k === 'u' || k === 's')) {
+        e.preventDefault()
+        return
+      }
+      if (k === 'z' || k === 'y' || (e.shiftKey && k === 'z')) {
+        e.preventDefault()
+        return
+      }
+      if (!e.shiftKey && k === 'r') {
+        e.preventDefault()
+        return
+      }
+    }
+    dom.addEventListener('keydown', onCap, true)
+    return () => dom.removeEventListener('keydown', onCap, true)
+  }, [editor])
+
+  useEffect(() => {
     const onHelp = () => setHotkeysOpen(true)
     window.addEventListener(WIKI_OPEN_HOTKEY_HELP, onHelp)
     return () => window.removeEventListener(WIKI_OPEN_HOTKEY_HELP, onHelp)
@@ -303,6 +392,50 @@ function WikiDocumentEditorLoaded({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [hotkeysOpen])
+
+  useEffect(() => {
+    if (!editor) return
+    const onRefresh = () => {
+      const ed = editorRef.current
+      if (!ed) return
+      ed.view.dispatch(ed.state.tr.setMeta('commentGutterRefresh', true))
+    }
+    window.addEventListener(WIKI_COMMENT_GUTTER_REFRESH, onRefresh)
+    return () => window.removeEventListener(WIKI_COMMENT_GUTTER_REFRESH, onRefresh)
+  }, [editor])
+
+  useEffect(() => {
+    const h = (ev: Event) => {
+      const e = ev as CustomEvent<{ pageKey: string; pos: number; excerpt: string }>
+      if (e.detail?.pageKey !== pageKey) return
+      const ed = editorRef.current
+      if (!ed) return
+      const anchor = ensureCommentAnchorAtPosition(ed, e.detail.pos)
+      if (!anchor) return
+      setCommentScope({ mode: 'block', anchorKey: anchor, excerpt: e.detail.excerpt || '' })
+      setCommentsOpen(true)
+    }
+    window.addEventListener(WIKI_COMMENT_OPEN_EVENT, h as EventListener)
+    return () => window.removeEventListener(WIKI_COMMENT_OPEN_EVENT, h as EventListener)
+  }, [pageKey])
+
+  useEffect(() => {
+    const root = editor?.view.dom
+    if (!root) return
+    const clear = () => {
+      root.querySelectorAll('.wiki-block--comment-active').forEach((el) => el.classList.remove('wiki-block--comment-active'))
+    }
+    if (!commentsOpen || commentScope.mode !== 'block') {
+      clear()
+      return () => clear()
+    }
+    clear()
+    const el = root.querySelector(`[data-comment-anchor="${commentScope.anchorKey}"]`)
+    el?.classList.add('wiki-block--comment-active')
+    return () => {
+      el?.classList.remove('wiki-block--comment-active')
+    }
+  }, [editor, commentsOpen, commentScope])
 
   useEffect(() => {
     return attachYjsBroadcastChannel(ydoc, broadcastChannelName(pageKey, storageKey))
@@ -354,8 +487,6 @@ function WikiDocumentEditorLoaded({
 
   )
 
-
-
   const onRestoreVersion = useCallback(
 
     (doc: JSONContent) => {
@@ -406,7 +537,12 @@ function WikiDocumentEditorLoaded({
 
         onInsertImageFile={() => setImageOpen(true)}
 
-        onOpenComments={() => setCommentsOpen(true)}
+        onOpenComments={() => {
+          setCommentScope({ mode: 'page' })
+          setCommentsOpen(true)
+        }}
+
+        onOpenMwsTable={() => setMwsOpen(true)}
 
         onOpenCommentHistory={() => setHistoryOpen(true)}
 
@@ -423,6 +559,8 @@ function WikiDocumentEditorLoaded({
       />
 
       <WikiBubbleMenu editor={editor} />
+
+      <WikiImageBubbleMenu editor={editor} />
 
       <ImageInsertModal
 
@@ -482,15 +620,22 @@ function WikiDocumentEditorLoaded({
 
         open={commentsOpen}
 
-        onClose={() => setCommentsOpen(false)}
+        onClose={() => {
+          setCommentsOpen(false)
+          setCommentScope({ mode: 'page' })
+        }}
 
         pageKey={pageKey}
 
         excerpt={excerpt}
 
+        scope={commentScope}
+
         accessRevision={accessRev}
 
       />
+
+      <MwsTableInsertModal open={mwsOpen} editor={editor} onClose={() => setMwsOpen(false)} />
 
       <main className="wiki-main wiki-main--wide">
 

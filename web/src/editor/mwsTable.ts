@@ -115,21 +115,30 @@ export function formatMwsCellValue(value: unknown): string {
   return String(value)
 }
 
+export type MwsTableEmbedOptions = {
+  /** Space MWS для POST/DELETE полей (атрибут таблицы в документе). */
+  mwsSpaceId?: string | null
+}
+
 export function tableResponseToTiptapJson(
   data: TableDataResponse,
   mwsDstId: string,
   mwsViewId: string,
+  options?: MwsTableEmbedOptions,
 ): JSONContent {
   const fp = fingerprintMwsTableData(data)
   const fields = columnsForMwsTable(data)
   const recordFieldKeys = fields.map((f, i) =>
     resolveRecordFieldKey(f, i, fields, data.records),
   )
-  const tableAttrs = {
+  const space = options?.mwsSpaceId?.trim() || null
+  const tableAttrs: Record<string, unknown> = {
     mwsDstId,
     mwsViewId: mwsViewId || null,
     mwsFingerprint: fp,
     mwsRecordFieldKeys: fields.length > 0 ? JSON.stringify(recordFieldKeys) : null,
+    mwsColumnFieldIds: fields.length > 0 ? JSON.stringify(fields.map((f) => f.id)) : null,
+    mwsSpaceId: space,
   }
   if (fields.length === 0) {
     return {
@@ -226,6 +235,22 @@ export const MwsTable = Table.extend({
         renderHTML: (attrs) => {
           const v = attrs.mwsRecordFieldKeys as string | null
           return v ? { 'data-mws-record-field-keys': v } : {}
+        },
+      },
+      mwsColumnFieldIds: {
+        default: null,
+        parseHTML: (el) => el.getAttribute('data-mws-column-field-ids'),
+        renderHTML: (attrs) => {
+          const v = attrs.mwsColumnFieldIds as string | null
+          return v ? { 'data-mws-column-field-ids': v } : {}
+        },
+      },
+      mwsSpaceId: {
+        default: null,
+        parseHTML: (el) => el.getAttribute('data-mws-space-id'),
+        renderHTML: (attrs) => {
+          const v = attrs.mwsSpaceId as string | null
+          return v ? { 'data-mws-space-id': v } : {}
         },
       },
     }

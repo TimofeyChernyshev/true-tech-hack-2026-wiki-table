@@ -4,6 +4,7 @@ type Props = {
 }
 
 const ROWS: { keys: string; action: string }[] = [
+  { keys: 'Ctrl+щелчок по ссылке', action: 'Перейти по ссылке в тексте (⌘+щелчок на macOS); без модификатора переход отключён' },
   { keys: 'Ctrl+S', action: 'Сохранить сейчас (localStorage и Yjs; синхрон с сервером — WebSocket)' },
   { keys: 'Ctrl+Shift+/', action: 'Эта справка (знак «?»)' },
   { keys: 'Ctrl+B', action: 'Жирный' },

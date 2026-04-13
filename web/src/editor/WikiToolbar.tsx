@@ -1,10 +1,14 @@
-import type { ReactNode } from 'react'
+import { useCallback, useState, type ReactNode } from 'react'
 import type { Editor } from '@tiptap/react'
+
+import { LinkHrefModal } from './LinkHrefModal'
 
 type Props = {
   editor: Editor | null
   onInsertImageFile?: () => void
   onOpenComments?: () => void
+  /** Вставка таблицы по ссылке MWS Workbench (отдельно от обычной таблицы). */
+  onOpenMwsTable?: () => void
   onOpenCommentHistory?: () => void
   onOpenCommentAccess?: () => void
   onOpenTimeMachine?: () => void
@@ -41,14 +45,38 @@ export function WikiToolbar({
   editor,
   onInsertImageFile,
   onOpenComments,
+  onOpenMwsTable,
   onOpenCommentHistory,
   onOpenCommentAccess,
   onOpenTimeMachine,
 }: Props) {
   const ed = editor
 
+  const [linkOpen, setLinkOpen] = useState(false)
+  const [linkInitial, setLinkInitial] = useState('https://')
+
+  const openLinkModal = useCallback(() => {
+    if (!ed) return
+    const prev = ed.getAttributes('link').href as string | undefined
+    setLinkInitial(prev && prev.length ? prev : 'https://')
+    setLinkOpen(true)
+  }, [ed])
+
   return (
     <div className="wiki-toolbar" role="toolbar" aria-label="Форматирование">
+      {ed ? (
+        <LinkHrefModal
+          open={linkOpen}
+          initialHref={linkInitial}
+          onClose={() => setLinkOpen(false)}
+          onSave={(href) => {
+            ed.chain().focus().extendMarkRange('link').setLink({ href }).run()
+          }}
+          onRemove={() => {
+            ed.chain().focus().extendMarkRange('link').unsetLink().run()
+          }}
+        />
+      ) : null}
       <div className="wiki-toolbar-nav">
         <button
           type="button"
@@ -226,22 +254,23 @@ export function WikiToolbar({
           >
             ⊞
           </TbBtn>
+          <button
+            type="button"
+            className="tb-btn tb-btn-mws"
+            disabled={!ed || !onOpenMwsTable}
+            title="Таблица из MWS по ссылке workbench (tables.mws.ru)"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onOpenMwsTable?.()}
+          >
+            MWS
+          </button>
         </div>
         <div className="tb-group">
           <TbBtn
             title="Ссылка"
             active={ed?.isActive('link')}
             disabled={!ed}
-            onClick={() => {
-              const prev = ed?.getAttributes('link').href as string | undefined
-              const url = window.prompt('URL ссылки', prev ?? 'https://')
-              if (url === null) return
-              if (url === '') {
-                ed?.chain().focus().extendMarkRange('link').unsetLink().run()
-                return
-              }
-              ed?.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
-            }}
+            onClick={() => openLinkModal()}
           >
             🔗
           </TbBtn>

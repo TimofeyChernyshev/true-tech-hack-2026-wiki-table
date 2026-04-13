@@ -4,11 +4,22 @@ import type { WikiPageInfo } from './wikiPageRegistry'
 
 type Props = {
   pages: WikiPageInfo[]
+  currentPageKey: string
+  backlinkKeys: string[]
   onCreatePage: () => void
+  /** На экране графа блок «Ссылки сюда» скрыт. */
+  showBacklinks?: boolean
 }
 
-export function WikiPagesSidebar({ pages, onCreatePage }: Props) {
+export function WikiPagesSidebar({
+  pages,
+  currentPageKey,
+  backlinkKeys,
+  onCreatePage,
+  showBacklinks = true,
+}: Props) {
   const sorted = [...pages].sort((a, b) => a.title.localeCompare(b.title, 'ru'))
+  const titleByKey = new Map(pages.map((p) => [p.key, p.title]))
 
   return (
     <aside className="wiki-pages-sidebar" aria-label="Страницы">
@@ -17,6 +28,16 @@ export function WikiPagesSidebar({ pages, onCreatePage }: Props) {
         <button type="button" className="wiki-pages-sidebar-new" onClick={onCreatePage}>
           + Новая
         </button>
+      </div>
+      <div className="wiki-pages-sidebar-graph-row">
+        <NavLink
+          to="/graph"
+          className={({ isActive }) =>
+            `wiki-pages-sidebar-graph${isActive ? ' wiki-pages-sidebar-graph--active' : ''}`
+          }
+        >
+          Граф связей
+        </NavLink>
       </div>
       <nav className="wiki-pages-sidebar-nav">
         <ul className="wiki-pages-sidebar-list">
@@ -35,6 +56,34 @@ export function WikiPagesSidebar({ pages, onCreatePage }: Props) {
           ))}
         </ul>
       </nav>
+      {showBacklinks ? (
+        <section className="wiki-pages-sidebar-backlinks" aria-label="Обратные ссылки">
+          <h3 className="wiki-pages-sidebar-backlinks-title">Ссылки сюда</h3>
+          {backlinkKeys.length === 0 ? (
+            <p className="wiki-pages-sidebar-backlinks-empty">
+              Другие страницы со ссылкой на «{titleByKey.get(currentPageKey) ?? currentPageKey}» появятся здесь после
+              сохранения текста.
+            </p>
+          ) : (
+            <ul className="wiki-pages-sidebar-backlinks-list">
+              {backlinkKeys.map((key) => (
+                <li key={key}>
+                  <NavLink
+                    to={`/p/${encodeURIComponent(key)}`}
+                    className={({ isActive }) =>
+                      `wiki-pages-sidebar-link${isActive ? ' wiki-pages-sidebar-link--active' : ''}`
+                    }
+                  >
+                    <span className="wiki-pages-sidebar-link-text">{titleByKey.get(key) ?? key}</span>
+                    <span className="wiki-pages-sidebar-link-key">{key}</span>
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
     </aside>
   )
 }
+

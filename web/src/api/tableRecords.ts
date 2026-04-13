@@ -1,4 +1,23 @@
-import type { ErrorResponse, TableDataResponse } from './types'
+import type {
+  CreateFieldBody,
+  CreateRecordsRequest,
+  DeleteRecordsResponse,
+  ErrorResponse,
+  FieldResponse,
+  RecordsResponse,
+  TableDataResponse,
+} from './types'
+
+/**
+ * REST к бэкенду `/api/v1/tables/{dstId}/…` (см. api/table-service.yaml):
+ * - GET    …/records      — список записей (и метаданные полей)
+ * - POST   …/records      — создать записи (моментально по кнопке)
+ * - DELETE …/records      — удалить записи по id
+ * - POST   …/fields       — новый столбец (query spaceId)
+ * - DELETE …/fields/{fieldId} — удалить столбец (query spaceId)
+ *
+ * Правки текста ячеек/страницы — через коллаборацию / вебсокет, не через эти методы.
+ */
 
 function parseJsonBody(text: string): unknown {
   if (!text) return null
@@ -36,7 +55,47 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     throw new Error(parseApiError(body, res.status))
   }
-  return body as T
+  return (body ?? ({} as T)) as T
+}
+
+export async function createTableRecords(
+  dstId: string,
+  body: CreateRecordsRequest,
+  viewId?: string | null,
+): Promise<RecordsResponse> {
+  const q = new URLSearchParams()
+  if (viewId) q.set('viewId', viewId)
+  const qs = q.toString()
+  const path = `/api/v1/tables/${encodeURIComponent(dstId)}/records${qs ? `?${qs}` : ''}`
+  return requestJson<RecordsResponse>(path, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export async function deleteTableRecords(dstId: string, recordIds: string[]): Promise<DeleteRecordsResponse> {
+  const path = `/api/v1/tables/${encodeURIComponent(dstId)}/records`
+  return requestJson<DeleteRecordsResponse>(path, {
+    method: 'DELETE',
+    body: JSON.stringify({ recordIds }),
+  })
+}
+
+export async function createTableField(dstId: string, spaceId: string, body: CreateFieldBody): Promise<FieldResponse> {
+  const q = new URLSearchParams()
+  q.set('spaceId', spaceId)
+  const path = `/api/v1/tables/${encodeURIComponent(dstId)}/fields?${q}`
+  return requestJson<FieldResponse>(path, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export async function deleteTableField(dstId: string, fieldId: string, spaceId: string): Promise<void> {
+  const q = new URLSearchParams()
+  q.set('spaceId', spaceId)
+  const path = `/api/v1/tables/${encodeURIComponent(dstId)}/fields/${encodeURIComponent(fieldId)}?${q}`
+  await requestJson<unknown>(path, { method: 'DELETE' })
 }
 
 export async function fetchTableData(
