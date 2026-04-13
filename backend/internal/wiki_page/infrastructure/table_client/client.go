@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"time"
-	"true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/wiki-page/domain"
+	"true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/wiki_page/domain"
 
 	"github.com/go-resty/resty/v2"
 )
