@@ -18,62 +18,129 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
-// Defines values for TableFieldType.
+// Defines values for CreateFieldRequestType.
 const (
-	Attachment   TableFieldType = "Attachment"
-	Checkbox     TableFieldType = "Checkbox"
-	Currency     TableFieldType = "Currency"
-	DateTime     TableFieldType = "DateTime"
-	Email        TableFieldType = "Email"
-	Member       TableFieldType = "Member"
-	MultiSelect  TableFieldType = "MultiSelect"
-	Number       TableFieldType = "Number"
-	Percent      TableFieldType = "Percent"
-	Phone        TableFieldType = "Phone"
-	Rating       TableFieldType = "Rating"
-	SingleSelect TableFieldType = "SingleSelect"
-	SingleText   TableFieldType = "SingleText"
-	Text         TableFieldType = "Text"
-	URL          TableFieldType = "URL"
+	CreateFieldRequestTypeAttachment   CreateFieldRequestType = "Attachment"
+	CreateFieldRequestTypeCheckbox     CreateFieldRequestType = "Checkbox"
+	CreateFieldRequestTypeCurrency     CreateFieldRequestType = "Currency"
+	CreateFieldRequestTypeDateTime     CreateFieldRequestType = "DateTime"
+	CreateFieldRequestTypeEmail        CreateFieldRequestType = "Email"
+	CreateFieldRequestTypeMember       CreateFieldRequestType = "Member"
+	CreateFieldRequestTypeMultiSelect  CreateFieldRequestType = "MultiSelect"
+	CreateFieldRequestTypeNumber       CreateFieldRequestType = "Number"
+	CreateFieldRequestTypePercent      CreateFieldRequestType = "Percent"
+	CreateFieldRequestTypePhone        CreateFieldRequestType = "Phone"
+	CreateFieldRequestTypeRating       CreateFieldRequestType = "Rating"
+	CreateFieldRequestTypeSingleSelect CreateFieldRequestType = "SingleSelect"
+	CreateFieldRequestTypeSingleText   CreateFieldRequestType = "SingleText"
+	CreateFieldRequestTypeText         CreateFieldRequestType = "Text"
+	CreateFieldRequestTypeURL          CreateFieldRequestType = "URL"
 )
 
-// Valid indicates whether the value is a known member of the TableFieldType enum.
-func (e TableFieldType) Valid() bool {
+// Valid indicates whether the value is a known member of the CreateFieldRequestType enum.
+func (e CreateFieldRequestType) Valid() bool {
 	switch e {
-	case Attachment:
+	case CreateFieldRequestTypeAttachment:
 		return true
-	case Checkbox:
+	case CreateFieldRequestTypeCheckbox:
 		return true
-	case Currency:
+	case CreateFieldRequestTypeCurrency:
 		return true
-	case DateTime:
+	case CreateFieldRequestTypeDateTime:
 		return true
-	case Email:
+	case CreateFieldRequestTypeEmail:
 		return true
-	case Member:
+	case CreateFieldRequestTypeMember:
 		return true
-	case MultiSelect:
+	case CreateFieldRequestTypeMultiSelect:
 		return true
-	case Number:
+	case CreateFieldRequestTypeNumber:
 		return true
-	case Percent:
+	case CreateFieldRequestTypePercent:
 		return true
-	case Phone:
+	case CreateFieldRequestTypePhone:
 		return true
-	case Rating:
+	case CreateFieldRequestTypeRating:
 		return true
-	case SingleSelect:
+	case CreateFieldRequestTypeSingleSelect:
 		return true
-	case SingleText:
+	case CreateFieldRequestTypeSingleText:
 		return true
-	case Text:
+	case CreateFieldRequestTypeText:
 		return true
-	case URL:
+	case CreateFieldRequestTypeURL:
 		return true
 	default:
 		return false
 	}
 }
+
+// Defines values for TableFieldType.
+const (
+	TableFieldTypeAttachment   TableFieldType = "Attachment"
+	TableFieldTypeCheckbox     TableFieldType = "Checkbox"
+	TableFieldTypeCurrency     TableFieldType = "Currency"
+	TableFieldTypeDateTime     TableFieldType = "DateTime"
+	TableFieldTypeEmail        TableFieldType = "Email"
+	TableFieldTypeMember       TableFieldType = "Member"
+	TableFieldTypeMultiSelect  TableFieldType = "MultiSelect"
+	TableFieldTypeNumber       TableFieldType = "Number"
+	TableFieldTypePercent      TableFieldType = "Percent"
+	TableFieldTypePhone        TableFieldType = "Phone"
+	TableFieldTypeRating       TableFieldType = "Rating"
+	TableFieldTypeSingleSelect TableFieldType = "SingleSelect"
+	TableFieldTypeSingleText   TableFieldType = "SingleText"
+	TableFieldTypeText         TableFieldType = "Text"
+	TableFieldTypeURL          TableFieldType = "URL"
+)
+
+// Valid indicates whether the value is a known member of the TableFieldType enum.
+func (e TableFieldType) Valid() bool {
+	switch e {
+	case TableFieldTypeAttachment:
+		return true
+	case TableFieldTypeCheckbox:
+		return true
+	case TableFieldTypeCurrency:
+		return true
+	case TableFieldTypeDateTime:
+		return true
+	case TableFieldTypeEmail:
+		return true
+	case TableFieldTypeMember:
+		return true
+	case TableFieldTypeMultiSelect:
+		return true
+	case TableFieldTypeNumber:
+		return true
+	case TableFieldTypePercent:
+		return true
+	case TableFieldTypePhone:
+		return true
+	case TableFieldTypeRating:
+		return true
+	case TableFieldTypeSingleSelect:
+		return true
+	case TableFieldTypeSingleText:
+		return true
+	case TableFieldTypeText:
+		return true
+	case TableFieldTypeURL:
+		return true
+	default:
+		return false
+	}
+}
+
+// CreateFieldRequest defines model for CreateFieldRequest.
+type CreateFieldRequest struct {
+	Name     string                  `json:"name"`
+	Property *map[string]interface{} `json:"property,omitempty"`
+	Type     CreateFieldRequestType  `json:"type"`
+}
+
+// CreateFieldRequestType defines model for CreateFieldRequest.Type.
+type CreateFieldRequestType string
 
 // CreateRecordsRequest defines model for CreateRecordsRequest.
 type CreateRecordsRequest struct {
@@ -101,6 +168,13 @@ type ErrorResponse struct {
 	Message string  `json:"message"`
 }
 
+// FieldResponse defines model for FieldResponse.
+type FieldResponse struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
 // Pagination defines model for Pagination.
 type Pagination struct {
 	HasMore  bool `json:"hasMore"`
@@ -112,6 +186,12 @@ type Pagination struct {
 // RecordsResponse defines model for RecordsResponse.
 type RecordsResponse struct {
 	Records []TableRecord `json:"records"`
+}
+
+// SuccessResponse defines model for SuccessResponse.
+type SuccessResponse struct {
+	Message *string `json:"message,omitempty"`
+	Success *bool   `json:"success,omitempty"`
 }
 
 // TableDataResponse defines model for TableDataResponse.
@@ -151,6 +231,16 @@ type UpdateRecordsRequest struct {
 	} `json:"records"`
 }
 
+// PostTablesDstIdFieldsParams defines parameters for PostTablesDstIdFields.
+type PostTablesDstIdFieldsParams struct {
+	SpaceId string `form:"spaceId" json:"spaceId"`
+}
+
+// DeleteTablesDstIdFieldsFieldIdParams defines parameters for DeleteTablesDstIdFieldsFieldId.
+type DeleteTablesDstIdFieldsFieldIdParams struct {
+	SpaceId string `form:"spaceId" json:"spaceId"`
+}
+
 // GetTablesDstIdRecordsParams defines parameters for GetTablesDstIdRecords.
 type GetTablesDstIdRecordsParams struct {
 	ViewId   *string `form:"viewId,omitempty" json:"viewId,omitempty"`
@@ -168,6 +258,14 @@ type PostTablesDstIdRecordsParams struct {
 	ViewId *string `form:"viewId,omitempty" json:"viewId,omitempty"`
 }
 
+// PatchTablesDstIdViewsViewIdFieldsFieldIdIndexJSONBody defines parameters for PatchTablesDstIdViewsViewIdFieldsFieldIdIndex.
+type PatchTablesDstIdViewsViewIdFieldsFieldIdIndexJSONBody struct {
+	Index int `json:"index"`
+}
+
+// PostTablesDstIdFieldsJSONRequestBody defines body for PostTablesDstIdFields for application/json ContentType.
+type PostTablesDstIdFieldsJSONRequestBody = CreateFieldRequest
+
 // DeleteTablesDstIdRecordsJSONRequestBody defines body for DeleteTablesDstIdRecords for application/json ContentType.
 type DeleteTablesDstIdRecordsJSONRequestBody = DeleteRecordsRequest
 
@@ -177,8 +275,17 @@ type PatchTablesDstIdRecordsJSONRequestBody = UpdateRecordsRequest
 // PostTablesDstIdRecordsJSONRequestBody defines body for PostTablesDstIdRecords for application/json ContentType.
 type PostTablesDstIdRecordsJSONRequestBody = CreateRecordsRequest
 
+// PatchTablesDstIdViewsViewIdFieldsFieldIdIndexJSONRequestBody defines body for PatchTablesDstIdViewsViewIdFieldsFieldIdIndex for application/json ContentType.
+type PatchTablesDstIdViewsViewIdFieldsFieldIdIndexJSONRequestBody PatchTablesDstIdViewsViewIdFieldsFieldIdIndexJSONBody
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Создать поле в таблице
+	// (POST /tables/{dstId}/fields)
+	PostTablesDstIdFields(c *gin.Context, dstId string, params PostTablesDstIdFieldsParams)
+	// Удалить поле из таблицы
+	// (DELETE /tables/{dstId}/fields/{fieldId})
+	DeleteTablesDstIdFieldsFieldId(c *gin.Context, dstId string, fieldId string, params DeleteTablesDstIdFieldsFieldIdParams)
 	// Удалить записи из таблицы
 	// (DELETE /tables/{dstId}/records)
 	DeleteTablesDstIdRecords(c *gin.Context, dstId string)
@@ -191,6 +298,9 @@ type ServerInterface interface {
 	// Создать записи в таблице
 	// (POST /tables/{dstId}/records)
 	PostTablesDstIdRecords(c *gin.Context, dstId string, params PostTablesDstIdRecordsParams)
+	// Изменить порядок поля в представлении
+	// (PATCH /tables/{dstId}/views/{viewId}/fields/{fieldId}/index)
+	PatchTablesDstIdViewsViewIdFieldsFieldIdIndex(c *gin.Context, dstId string, viewId string, fieldId string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -201,6 +311,99 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(c *gin.Context)
+
+// PostTablesDstIdFields operation middleware
+func (siw *ServerInterfaceWrapper) PostTablesDstIdFields(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "dstId" -------------
+	var dstId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "dstId", c.Param("dstId"), &dstId, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter dstId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PostTablesDstIdFieldsParams
+
+	// ------------- Required query parameter "spaceId" -------------
+
+	if paramValue := c.Query("spaceId"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandler(c, fmt.Errorf("Query argument spaceId is required, but not found"), http.StatusBadRequest)
+		return
+	}
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "spaceId", c.Request.URL.Query(), &params.SpaceId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter spaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PostTablesDstIdFields(c, dstId, params)
+}
+
+// DeleteTablesDstIdFieldsFieldId operation middleware
+func (siw *ServerInterfaceWrapper) DeleteTablesDstIdFieldsFieldId(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "dstId" -------------
+	var dstId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "dstId", c.Param("dstId"), &dstId, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter dstId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "fieldId" -------------
+	var fieldId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "fieldId", c.Param("fieldId"), &fieldId, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter fieldId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteTablesDstIdFieldsFieldIdParams
+
+	// ------------- Required query parameter "spaceId" -------------
+
+	if paramValue := c.Query("spaceId"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandler(c, fmt.Errorf("Query argument spaceId is required, but not found"), http.StatusBadRequest)
+		return
+	}
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "spaceId", c.Request.URL.Query(), &params.SpaceId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter spaceId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteTablesDstIdFieldsFieldId(c, dstId, fieldId, params)
+}
 
 // DeleteTablesDstIdRecords operation middleware
 func (siw *ServerInterfaceWrapper) DeleteTablesDstIdRecords(c *gin.Context) {
@@ -347,6 +550,48 @@ func (siw *ServerInterfaceWrapper) PostTablesDstIdRecords(c *gin.Context) {
 	siw.Handler.PostTablesDstIdRecords(c, dstId, params)
 }
 
+// PatchTablesDstIdViewsViewIdFieldsFieldIdIndex operation middleware
+func (siw *ServerInterfaceWrapper) PatchTablesDstIdViewsViewIdFieldsFieldIdIndex(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "dstId" -------------
+	var dstId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "dstId", c.Param("dstId"), &dstId, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter dstId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "viewId" -------------
+	var viewId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "viewId", c.Param("viewId"), &viewId, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter viewId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "fieldId" -------------
+	var fieldId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "fieldId", c.Param("fieldId"), &fieldId, runtime.BindStyledParameterOptions{Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter fieldId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PatchTablesDstIdViewsViewIdFieldsFieldIdIndex(c, dstId, viewId, fieldId)
+}
+
 // GinServerOptions provides options for the Gin server.
 type GinServerOptions struct {
 	BaseURL      string
@@ -374,35 +619,43 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
+	router.POST(options.BaseURL+"/tables/:dstId/fields", wrapper.PostTablesDstIdFields)
+	router.DELETE(options.BaseURL+"/tables/:dstId/fields/:fieldId", wrapper.DeleteTablesDstIdFieldsFieldId)
 	router.DELETE(options.BaseURL+"/tables/:dstId/records", wrapper.DeleteTablesDstIdRecords)
 	router.GET(options.BaseURL+"/tables/:dstId/records", wrapper.GetTablesDstIdRecords)
 	router.PATCH(options.BaseURL+"/tables/:dstId/records", wrapper.PatchTablesDstIdRecords)
 	router.POST(options.BaseURL+"/tables/:dstId/records", wrapper.PostTablesDstIdRecords)
+	router.PATCH(options.BaseURL+"/tables/:dstId/views/:viewId/fields/:fieldId/index", wrapper.PatchTablesDstIdViewsViewIdFieldsFieldIdIndex)
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+xYQU8bRxT+K6vXHqexaUkPvoVAKquFWkDUA+Iw7D7sCbszy8wsxUU+NJXKIVVz76FV",
-	"1T9AoiJcUchfmP1H1czaeO0dg6FgpWpOMTNv3vvmm/e99zZHEIokFRy5VtA4AhV2MKHu51OJVOM6hkJG",
-	"ah33M1TarqdSpCg1Q2cli337k2lMVNVil2FcGNAoYpoJTuNWyULLDAlEqELJUrsNDTC/mPP85/zY9INP",
-	"AtM3f5tTc2FOAvPOXJpzc2r+IoE5s0v5sdvq56+t5Z/mxFyYi/yVObV/nOevrdmJeWf6+femDwR0N0Vo",
-	"gNh5gaGGXo+AxP2MSYygsTXEul2xI5Aw3iwuuHC1S6Wk3YqTISU+L8sY46ykNidoHThTWjLevguk5myg",
-	"VCq4wiqqBJWibfRCUVkYoirD3BEiRsodlErEFSmFnB4pFFE5DOMa2yjtwQg1ZfEUOqbim2DDuR/Z+yhp",
-	"0TbjtMjGSXQdqlaFRN9dCaS0jWtZ4vhinCX25+h1SjexhhvsO+cmoYcDy3qd3HBOC03jMff1qtnEhYeg",
-	"SlGHjsjVdXw03JgTPvl/LHEXGvBRbVRaaoO6UtukO/Eg06D3L3Tk/CxTTadDG9Wd2ZE9s2eqwBxvpXy4",
-	"zk8pc9x97pEfAtpuNyNv+ru9NZrMIIChGzIkaQR07KpTmS94qlA+VsQ9EJkfOfeDJkPv3dLmCEixcATI",
-	"rQi2YIPxdoybeKiBwOCfYm0DY3uGwGoWa3b111qW7KAEAk8zKZGHXSDQQhkit7vLVOMmS6xSnmhNw05S",
-	"rK/i8FQHw70dcQgE1qm2iAk8X//KOukIbs+tJJTFJRKnvAazD+E4GFhOpX2QGNV66Vp19MS1kl0hE6qL",
-	"avD5IvhqyGwtuYJh2EW8b5Wl0S0wTOlPo4z0cfDchZjXRHKb69/pOvcxUVhLxneFw8R0bPe+YXssWImY",
-	"FjJYouEe8ih40moCgQOUqhiwFh7VH9UtCJEipymDBnzmlqz+dceRU3NlQtWOIqWbUa9WIjZyE4P9ZVlz",
-	"xcLyMpgkXK6qZXtqvVRWJE1Qo1TQ2DoCZlHYUMPcb4ALA+WbFw9R1EYf69uFMSq9JKJuMTlwbXVq3zZN",
-	"YxY6bLUXqqhII1fXFWHvkNYbfxQLzS0U7cex8mm9/lAYBk3OgRgflb/+0j7j4j2GHh/OPCGXaBRc0ULg",
-	"8TxjN7lGyWkcbKA8QBm4A04wKksSKrv26+EP9yFwbvr5y/ynsS8A+zFxFuQvzYl54wx+zF/Z8kTb6qox",
-	"KtjuEWijrub3F6jnltxk4Gc/Q9kdOTpg+K3zdOuTpdlvdDbCXZrFGhqP7eQ58xx6XYxi0vSEWLjB5/YD",
-	"6qk6ML6XWlqsL84v9prQwTOR8ej9VPFv9ls//yE/9ul4FgmnVIedqohbdvk/IOMH6m7eKWrO3e1DX7uT",
-	"In41b8yFuTRvvZ3t7ZgozOkUUQjlaWwtofT/VxLe/+qcSRIL85REATP6oItJXfxuLs2ZnfnuqArnzvkv",
-	"sjyTMTSgRlNWO1iA3nbvnwAAAP//cZcoGicXAAA=",
+	"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",
+	"cHP4bwAAAP//Bwpd27giAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

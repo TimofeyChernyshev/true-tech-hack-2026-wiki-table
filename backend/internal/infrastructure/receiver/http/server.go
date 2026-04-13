@@ -29,6 +29,10 @@ type TableService interface {
 	CreateRecords(ctx context.Context, dstID, viewID string, records []domain.RecordFields) ([]domain.TableRecord, error)
 	UpdateRecords(ctx context.Context, dstID, viewID string, records []domain.RecordUpdate) ([]domain.TableRecord, error)
 	DeleteRecords(ctx context.Context, dstID string, recordIDs []string) error
+
+	CreateField(ctx context.Context, spaceID, dstID, fieldName string, fieldType domain.FieldType, fieldProperty domain.FieldProperty) (*domain.TableField, error)
+	DeleteField(ctx context.Context, spaceID, dstID, fieldID string) error
+	UpdateFieldIndex(ctx context.Context, dstID, viewID, fieldID string, index int) error
 }
 
 func NewServer(tableService TableService, allowOrigins []string, port string, readTimeout time.Duration, wikiDataDir string) *Server {
@@ -105,7 +109,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 }
 
 func (s *Server) handleError(c *gin.Context, err error) {
-	slog.Error("Failed to get table data", "error", err)
+	slog.Error("Failed to proccess", "error", err)
 
 	c.JSON(http.StatusInternalServerError, ErrorResponse{
 		Code:    http.StatusInternalServerError,

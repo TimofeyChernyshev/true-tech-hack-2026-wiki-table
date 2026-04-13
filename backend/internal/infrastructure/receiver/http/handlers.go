@@ -142,7 +142,10 @@ func convertToTableDataResponse(data *domain.TableData) TableDataResponse {
 	fields := make([]TableField, len(data.Fields))
 	for i, f := range data.Fields {
 		desc := f.Description
-		prop := f.Property.GetMap()
+		var prop map[string]interface{}
+		if f.Property != nil {
+			prop = f.Property.GetMap()
+		}
 		fields[i] = TableField{
 			Id:          f.ID,
 			Name:        f.Name,
@@ -203,4 +206,76 @@ func convertToRecordsResponse(records []domain.TableRecord) RecordsResponse {
 		result[i] = record
 	}
 	return RecordsResponse{Records: result}
+}
+
+func (s *Server) PostTablesDstIdFields(c *gin.Context, dstId string, params PostTablesDstIdFieldsParams) {
+	var req CreateFieldRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		errText := err.Error()
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request body",
+			Details: &errText,
+		})
+		return
+	}
+
+	var property domain.FieldProperty
+	if req.Property != nil {
+		property = domain.FieldProperty(*req.Property)
+	}
+
+	field, err := s.tableService.CreateField(c.Request.Context(), params.SpaceId, dstId, req.Name, domain.FieldType(req.Type), property)
+	if err != nil {
+		s.handleError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, FieldResponse{
+		Id:   field.ID,
+		Name: field.Name,
+		Type: string(field.Type),
+	})
+}
+
+func (s *Server) DeleteTablesDstIdFieldsFieldId(c *gin.Context, dstId string, fieldId string, params DeleteTablesDstIdFieldsFieldIdParams) {
+	if err := s.tableService.DeleteField(c.Request.Context(), params.SpaceId, dstId, fieldId); err != nil {
+		s.handleError(c, err)
+		return
+	}
+
+	success := true
+	message := "Field deleted successfully"
+	c.JSON(http.StatusOK, SuccessResponse{
+		Success: &success,
+		Message: &message,
+	})
+}
+
+func (s *Server) PatchTablesDstIdViewsViewIdFieldsFieldIdIndex(c *gin.Context, dstId string, viewId string, fieldId string) {
+	var req struct {
+		Index int `json:"index"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		errText := err.Error()
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request body",
+			Details: &errText,
+		})
+		return
+	}
+
+	if err := s.tableService.UpdateFieldIndex(c.Request.Context(), dstId, viewId, fieldId, req.Index); err != nil {
+		s.handleError(c, err)
+		return
+	}
+
+	success := true
+	message := "Field index updated successfully"
+	c.JSON(http.StatusOK, SuccessResponse{
+		Success: &success,
+		Message: &message,
+	})
 }
