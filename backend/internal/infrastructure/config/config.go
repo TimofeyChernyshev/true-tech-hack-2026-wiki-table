@@ -15,13 +15,10 @@ type Config struct {
 	AllowOrigins      []string      `env:"ALLOW_ORIGINS"`
 	HTTPPort          string        `env:"HTTP_PORT" envDefault:"8080"`
 	HTTPReadTimeout   time.Duration `env:"HTTP_READ_TIMEOUT" envDefault:"15s"`
-	WikiDataDir       string        `env:"WIKI_DATA_DIR" envDefault:"data/wiki"`
 }
 
 func Load() (*Config, error) {
 	_ = godotenv.Load()
-	_ = godotenv.Load("../.env")
-	_ = godotenv.Load("../../.env")
 
 	var cfg Config
 

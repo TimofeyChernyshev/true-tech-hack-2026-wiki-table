@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
-	"strings"
 	"time"
 	"true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/domain"
 
@@ -20,7 +18,6 @@ type Server struct {
 	httpServer   *http.Server
 	tableService TableService
 	port         string
-	wikiDataDir  string
 }
 
 type TableService interface {
@@ -35,7 +32,7 @@ type TableService interface {
 	UpdateFieldIndex(ctx context.Context, dstID, viewID, fieldID string, index int) error
 }
 
-func NewServer(tableService TableService, allowOrigins []string, port string, readTimeout time.Duration, wikiDataDir string) *Server {
+func NewServer(tableService TableService, allowOrigins []string, port string, readTimeout time.Duration) *Server {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.New()
@@ -61,7 +58,6 @@ func NewServer(tableService TableService, allowOrigins []string, port string, re
 		router:       router,
 		tableService: tableService,
 		port:         port,
-		wikiDataDir:  strings.TrimSpace(wikiDataDir),
 	}
 
 	server.httpServer = &http.Server{
@@ -82,14 +78,6 @@ func (s *Server) registerRoutes() {
 
 	v1 := s.router.Group("/api/v1")
 	RegisterHandlers(v1, s)
-
-	if s.wikiDataDir != "" {
-		if err := os.MkdirAll(s.wikiDataDir, 0o755); err != nil {
-			slog.Error("wiki data dir", "path", s.wikiDataDir, "error", err)
-		}
-		v1.GET("/wiki/pages/:pageKey", s.getWikiPage)
-		v1.PUT("/wiki/pages/:pageKey", s.putWikiPage)
-	}
 }
 
 func (s *Server) Start() error {
