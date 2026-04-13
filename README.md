@@ -9,7 +9,7 @@
 | `backend/`         | REST API: wiki-страницы (JSON), прокси к MWS Tables, healthcheck            |
 | `web/`             | SPA: редактор документа, таблицы записей, комментарии (локально в браузере) |
 | `api/`             | OpenAPI-спецификации (`back-front.yaml` и др.)                              |
-| `internal/httpapi` | Общие HTTP-обработчики при необходимости (см. структуру репозитория)        |
+| `backend/internal/httpapi` | Доп. HTTP-хелперы (например контракт `back-front.yaml` для записей таблицы)   |
 
 ## Требования
 
