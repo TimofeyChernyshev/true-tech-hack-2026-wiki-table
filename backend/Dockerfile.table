@@ -11,8 +11,8 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags="-w -s" \
-    -o wiki \
-    ./cmd/task
+    -o table \
+    ./cmd/tables
 
 FROM alpine:3.19
 
@@ -20,8 +20,8 @@ WORKDIR /app
 
 RUN apk add --no-cache ca-certificates tzdata wget
 
-COPY --from=builder /app/wiki /app/wiki
+COPY --from=builder /app/table /app/table
 
 EXPOSE 8080
 
-CMD ["./wiki"]
+CMD ["./table"]
