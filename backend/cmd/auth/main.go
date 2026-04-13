@@ -37,7 +37,7 @@ func main() {
 	authService := application.NewAuthService(userRepo, tokenMgr)
 
 	// HTTP сервер
-	server := authhttp.NewServer(authService, cfg.AllowOrigins, cfg.HTTPPort, cfg.HTTPReadTimeout)
+	server := authhttp.NewServer(authService, cfg.AllowOrigins, cfg.HTTPPort, cfg.HTTPReadTimeout, cfg.JWTAccessTTL, cfg.JWTRefreshTTL)
 
 	go func() {
 		if err := server.Start(); err != nil {

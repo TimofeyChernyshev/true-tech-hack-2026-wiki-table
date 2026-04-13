@@ -50,6 +50,8 @@ func (s *Server) PostAuthRegister(c *gin.Context) {
 		return
 	}
 
+	s.setAuthCookies(c, tokens)
+
 	c.JSON(http.StatusCreated, AuthResponse{
 		AccessToken:  &tokens.AccessToken,
 		RefreshToken: &tokens.RefreshToken,
@@ -93,6 +95,9 @@ func (s *Server) PostAuthLogin(c *gin.Context) {
 // PostAuthLogout выход из системы
 // (POST /auth/logout)
 func (s *Server) PostAuthLogout(c *gin.Context) {
+	c.SetCookie("access_token", "", -1, "/", "", false, true)
+	c.SetCookie("refresh_token", "", -1, "/", "", false, true)
+
 	token := s.extractToken(c)
 	if token == "" {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{
@@ -141,12 +146,17 @@ func (s *Server) GetAuthMe(c *gin.Context) {
 func (s *Server) PostAuthRefresh(c *gin.Context) {
 	var req RefreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Code:    ptr(400),
-			Message: ptr("Invalid request body"),
-			Details: ptr(err.Error()),
-		})
-		return
+		cookieToken, _ := c.Cookie("refresh_token")
+		if cookieToken != "" {
+			req.RefreshToken = cookieToken
+		} else {
+			c.JSON(http.StatusBadRequest, ErrorResponse{
+				Code:    ptr(400),
+				Message: ptr("Invalid request body"),
+				Details: ptr(err.Error()),
+			})
+			return
+		}
 	}
 
 	tokens, err := s.authService.Refresh(c.Request.Context(), req.RefreshToken)
@@ -157,6 +167,8 @@ func (s *Server) PostAuthRefresh(c *gin.Context) {
 		})
 		return
 	}
+
+	s.setAuthCookies(c, tokens)
 
 	c.JSON(http.StatusOK, AuthResponse{
 		AccessToken:  &tokens.AccessToken,
@@ -246,6 +258,10 @@ func (s *Server) AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := s.extractToken(c)
 		if token == "" {
+			token, _ = c.Cookie("access_token")
+		}
+
+		if token == "" {
 			c.JSON(http.StatusUnauthorized, ErrorResponse{
 				Code:    ptr(401),
 				Message: ptr("Missing authorization token"),
@@ -286,6 +302,28 @@ func (s *Server) AdminMiddleware() gin.HandlerFunc {
 		}
 		c.Next()
 	}
+}
+
+func (s *Server) setAuthCookies(c *gin.Context, tokens *domain.TokenPair) {
+	c.SetCookie(
+		"access_token",
+		tokens.AccessToken,
+		int(s.accessTTL.Seconds()),
+		"/",
+		"",
+		false,
+		true,
+	)
+
+	c.SetCookie(
+		"refresh_token",
+		tokens.RefreshToken,
+		int(s.refreshTTL.Seconds()),
+		"/",
+		"",
+		false,
+		true,
+	)
 }
 
 func (s *Server) extractToken(c *gin.Context) string {

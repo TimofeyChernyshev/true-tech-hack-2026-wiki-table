@@ -17,6 +17,8 @@ type Server struct {
 	httpServer  *http.Server
 	authService AuthService
 	port        string
+	accessTTL   time.Duration
+	refreshTTL  time.Duration
 }
 
 type AuthService interface {
@@ -31,7 +33,7 @@ type AuthService interface {
 	ValidateToken(ctx context.Context, token string) (*domain.TokenClaims, error)
 }
 
-func NewServer(authService AuthService, allowOrigins []string, port string, readTimeout time.Duration) *Server {
+func NewServer(authService AuthService, allowOrigins []string, port string, readTimeout, accessTTL, refreshTTL time.Duration) *Server {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.New()
@@ -57,6 +59,8 @@ func NewServer(authService AuthService, allowOrigins []string, port string, read
 		router:      router,
 		authService: authService,
 		port:        port,
+		accessTTL:   accessTTL,
+		refreshTTL:  refreshTTL,
 	}
 
 	server.httpServer = &http.Server{
