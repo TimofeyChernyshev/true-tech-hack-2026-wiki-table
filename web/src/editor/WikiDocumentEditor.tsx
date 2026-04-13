@@ -65,6 +65,8 @@ import { CommentGutter, WIKI_COMMENT_OPEN_EVENT } from './commentGutter'
 
 import { MwsTableInsertModal } from './MwsTableInsertModal'
 
+import { MwsTableToolbar } from './MwsTableToolbar'
+
 import { ensureCommentAnchorAtPosition } from './wikiCommentAnchor'
 
 import 'tippy.js/dist/tippy.css'
@@ -531,32 +533,38 @@ function WikiDocumentEditorLoaded({
 
     <>
 
-      <WikiToolbar
+      <div className="wiki-toolbar-wrap">
 
-        editor={editor}
+        <WikiToolbar
 
-        onInsertImageFile={() => setImageOpen(true)}
+          editor={editor}
 
-        onOpenComments={() => {
-          setCommentScope({ mode: 'page' })
-          setCommentsOpen(true)
-        }}
+          onInsertImageFile={() => setImageOpen(true)}
 
-        onOpenMwsTable={() => setMwsOpen(true)}
+          onOpenComments={() => {
+            setCommentScope({ mode: 'page' })
+            setCommentsOpen(true)
+          }}
 
-        onOpenCommentHistory={() => setHistoryOpen(true)}
+          onOpenMwsTable={() => setMwsOpen(true)}
 
-        onOpenCommentAccess={() => {
+          onOpenCommentHistory={() => setHistoryOpen(true)}
 
-          setAccessMode(loadAccessMode(pageKey))
+          onOpenCommentAccess={() => {
 
-          setAccessOpen(true)
+            setAccessMode(loadAccessMode(pageKey))
 
-        }}
+            setAccessOpen(true)
 
-        onOpenTimeMachine={openTimeMachine}
+          }}
 
-      />
+          onOpenTimeMachine={openTimeMachine}
+
+        />
+
+        <MwsTableToolbar editor={editor} />
+
+      </div>
 
       <WikiBubbleMenu editor={editor} />
 

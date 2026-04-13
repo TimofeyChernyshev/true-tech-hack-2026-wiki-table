@@ -19,6 +19,13 @@ function blockInTable($pos: import('@tiptap/pm/model').ResolvedPos): boolean {
   return false
 }
 
+function blockInCodeBlock($pos: import('@tiptap/pm/model').ResolvedPos): boolean {
+  for (let d = $pos.depth; d > 0; d -= 1) {
+    if ($pos.node(d).type.name === 'codeBlock') return true
+  }
+  return false
+}
+
 function countThreadMessages(pageKey: string, anchorKey: string): number {
   const comments = loadCommentsAdvanced(pageKey)
   const threads = loadThreads(pageKey)
@@ -39,7 +46,7 @@ function buildDecorations(doc: import('@tiptap/pm/model').Node, pageKey: string)
   doc.descendants((node, pos) => {
     if (node.type.name !== 'paragraph' && node.type.name !== 'heading') return true
     const $p = doc.resolve(pos + 1)
-    if (blockInTable($p)) return true
+    if (blockInTable($p) || blockInCodeBlock($p)) return true
     const anchor = (node.attrs.commentAnchor as string | null | undefined) ?? null
     const count = anchor ? countThreadMessages(pageKey, anchor) : 0
     const innerEnd = pos + node.nodeSize - 1

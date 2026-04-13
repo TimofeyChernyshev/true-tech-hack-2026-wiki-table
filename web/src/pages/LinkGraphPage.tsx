@@ -5,7 +5,7 @@ import { rebuildBacklinksIndex, WIKI_BACKLINKS_UPDATED } from './wikiBacklinks'
 import { computeForceLayout } from './wikiGraphLayout'
 import { buildWikiLinkGraph } from './wikiLinkGraph'
 import { NewPageModal } from './NewPageModal'
-import { WikiPagesSidebar } from './WikiPagesSidebar'
+import { PagesSidebarToggle, WikiPagesSidebar } from './WikiPagesSidebar'
 import { addWikiPage, loadWikiPageIndex } from './wikiPageRegistry'
 import '../App.css'
 
@@ -20,6 +20,7 @@ export function LinkGraphPage() {
   const [layoutRev, setLayoutRev] = useState(0)
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [newOpen, setNewOpen] = useState(false)
+  const [pagesSidebarOpen, setPagesSidebarOpen] = useState(true)
   const [graphRev, setGraphRev] = useState(0)
 
   const graph = useMemo(() => {
@@ -184,16 +185,21 @@ export function LinkGraphPage() {
     <div className="wiki-app">
       <NewPageModal open={newOpen} onClose={() => setNewOpen(false)} onCreate={onCreate} />
       <div className="wiki-layout-with-pages">
-        <WikiPagesSidebar
-          pages={pages}
-          currentPageKey=""
-          backlinkKeys={[]}
-          onCreatePage={() => setNewOpen(true)}
-          showBacklinks={false}
-        />
+        {pagesSidebarOpen ? (
+          <WikiPagesSidebar
+            pages={pages}
+            currentPageKey=""
+            backlinkKeys={[]}
+            onCreatePage={() => setNewOpen(true)}
+            showBacklinks={false}
+          />
+        ) : null}
         <div className="wiki-graph-main">
           <header className="wiki-graph-header">
-            <h1 className="wiki-graph-title">Граф связей</h1>
+            <div className="wiki-graph-header-top">
+              <PagesSidebarToggle expanded={pagesSidebarOpen} onClick={() => setPagesSidebarOpen((v) => !v)} />
+              <h1 className="wiki-graph-title">Граф связей</h1>
+            </div>
             <p className="wiki-graph-hint">
               Связи задаёте сами: в тексте вставьте ссылку на другую страницу (в диалоге ссылки укажите{' '}
               <code className="wiki-graph-code">/p/ключ-страницы</code>

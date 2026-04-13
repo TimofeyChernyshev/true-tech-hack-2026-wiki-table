@@ -73,8 +73,8 @@ function formatCommentStamp(ts: number) {
 }
 
 function threadDisplayName(root: AdvancedComment, tm?: ThreadMeta): string {
-  if (tm?.contextExcerpt?.trim()) {
-    const t = tm.contextExcerpt.trim()
+  if (tm?.threadTitle?.trim()) {
+    const t = tm.threadTitle.trim()
     return t.length > 120 ? `${t.slice(0, 117)}…` : t
   }
   const line = root.text.trim().split(/\r?\n/)[0]?.trim() || 'Обсуждение'
@@ -282,6 +282,7 @@ export function CommentsDrawer({
           resolved: false,
           anchorKey: patch.anchorKey ?? WIKI_PAGE_COMMENT_ANCHOR,
           contextExcerpt: patch.contextExcerpt ?? null,
+          threadTitle: patch.threadTitle ?? null,
           ...patch,
         },
       }
@@ -466,8 +467,7 @@ export function CommentsDrawer({
 
     if (openNewThread) {
       const anchorKey = scope.mode === 'block' ? scope.anchorKey : WIKI_PAGE_COMMENT_ANCHOR
-      const contextExcerpt =
-        scope.mode === 'block' ? scope.excerpt : excerpt.trim() || null
+      const contextExcerpt = scope.mode === 'block' ? scope.excerpt : null
       tmap = ensureThreadWithMeta(threadId, threads, {
         anchorKey,
         contextExcerpt,
@@ -510,7 +510,6 @@ export function CommentsDrawer({
     persist,
     ensureThreadWithMeta,
     scope,
-    excerpt,
   ])
 
   const repliesOf = useCallback(
@@ -529,6 +528,29 @@ export function CommentsDrawer({
     [scopedRoots, activeThreadId],
   )
 
+  const activeThreadTitleStored = activeThreadId ? threads[activeThreadId]?.threadTitle : undefined
+  const [threadTitleDraft, setThreadTitleDraft] = useState('')
+  useEffect(() => {
+    if (!activeThreadId) {
+      setThreadTitleDraft('')
+      return
+    }
+    setThreadTitleDraft((activeThreadTitleStored ?? '').trim())
+  }, [activeThreadId, activeThreadTitleStored])
+
+  const persistThreadTitle = useCallback(() => {
+    if (!activeThreadId) return
+    const tm = threads[activeThreadId]
+    if (!tm) return
+    const cur = (tm.threadTitle ?? '').trim()
+    const next = threadTitleDraft.trim()
+    if (cur === next) return
+    persist(comments, {
+      ...threads,
+      [activeThreadId]: { ...tm, threadTitle: next || null },
+    })
+  }, [activeThreadId, threadTitleDraft, threads, comments, persist])
+
   const msgsEndRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open || !activeThreadId) return
@@ -540,13 +562,10 @@ export function CommentsDrawer({
     (!!viewThreadId && !!(threads[viewThreadId]?.resolved || threads[viewThreadId]?.deleted))
 
   const headerExcerpt = useMemo(() => {
-    if (scope.mode === 'block') return scope.excerpt
-    if (activeThreadId && activeRoot) {
-      const tm = threads[activeThreadId]
-      return threadDisplayName(activeRoot, tm)
-    }
-    return excerpt
-  }, [scope, excerpt, activeThreadId, activeRoot, threads])
+    if (scope.mode === 'page' && activeThreadId) return null
+    if (scope.mode === 'page') return excerpt
+    return scope.excerpt
+  }, [scope, excerpt, activeThreadId])
 
   if (!open) return null
 
@@ -665,17 +684,35 @@ export function CommentsDrawer({
                   return (
                     <section className="wiki-thread-figma-thread" aria-label={threadDisplayName(root, tm)}>
                       <div className="wiki-thread-toolbar wiki-thread-toolbar--figma">
-                        {tm.resolved ? <span className="wiki-badge wiki-badge--ok">Решено</span> : null}
-                        {!tm.resolved && !tm.deleted ? (
-                          <>
-                            <button type="button" className="wiki-thread-action" onClick={() => resolveThread(root.threadId)}>
-                              Пометить решённой
-                            </button>
-                            <button type="button" className="wiki-thread-action" onClick={() => deleteThread(root.threadId)}>
-                              Удалить ветку
-                            </button>
-                          </>
-                        ) : null}
+                        <input
+                          type="text"
+                          className="wiki-thread-title-field"
+                          value={threadTitleDraft}
+                          onChange={(e) => setThreadTitleDraft(e.target.value)}
+                          onBlur={persistThreadTitle}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              ;(e.target as HTMLInputElement).blur()
+                            }
+                          }}
+                          placeholder="Название ветки (необязательно)"
+                          aria-label="Название ветки"
+                          disabled={!!tm.deleted}
+                        />
+                        <div className="wiki-thread-toolbar-actions">
+                          {tm.resolved ? <span className="wiki-badge wiki-badge--ok">Решено</span> : null}
+                          {!tm.resolved && !tm.deleted ? (
+                            <>
+                              <button type="button" className="wiki-thread-action" onClick={() => resolveThread(root.threadId)}>
+                                Пометить решённой
+                              </button>
+                              <button type="button" className="wiki-thread-action" onClick={() => deleteThread(root.threadId)}>
+                                Удалить ветку
+                              </button>
+                            </>
+                          ) : null}
+                        </div>
                       </div>
                       <ul className="wiki-comments-figma-items">
                         {msgs.map((c) => (

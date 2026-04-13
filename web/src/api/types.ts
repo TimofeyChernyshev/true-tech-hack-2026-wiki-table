@@ -88,3 +88,18 @@ export interface FieldResponse {
   type: string
 }
 
+
+/** Тело POST /tables/{dstId}/fields */
+export interface CreateFieldBody {
+  name: string
+  type: TableFieldType
+  property?: Record<string, unknown>
+}
+
+/** Ответ после создания поля */
+export interface FieldResponse {
+  id: string
+  name: string
+  type: string
+}
+

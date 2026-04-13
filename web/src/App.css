@@ -597,6 +597,30 @@
   min-width: 0;
 }
 
+.wiki-pages-sidebar-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--dk-control-border);
+  background: var(--dk-bg);
+  color: var(--dk-text-primary);
+  cursor: pointer;
+}
+
+.wiki-pages-sidebar-toggle:hover {
+  background: var(--dk-control-fill);
+}
+
+.wiki-doc-header .wiki-pages-sidebar-toggle {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
 .wiki-pages-sidebar {
   width: 232px;
   flex-shrink: 0;
@@ -784,6 +808,19 @@
   border-bottom: 1px solid var(--dk-border);
 }
 
+.wiki-graph-header-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.wiki-graph-header-top .wiki-graph-title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
 .wiki-graph-title {
   margin: 0 0 8px;
   font-family: var(--font-wide);
@@ -948,7 +985,7 @@
 }
 
 .wiki-comments-figma-list {
-  padding: 0 24px 12px;
+  padding: 10px 24px 12px;
   max-height: 360px;
   overflow-y: auto;
 }
@@ -1272,7 +1309,35 @@
 }
 
 .wiki-thread-toolbar--figma {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
   margin-bottom: 10px;
+}
+
+.wiki-thread-title-field {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--font-compact);
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--dk-control-border);
+  background: var(--dk-bg);
+  color: var(--dk-text-primary);
+}
+
+.wiki-thread-title-field:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.wiki-thread-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .wiki-thread-figma-thread {
@@ -1672,6 +1737,8 @@
 }
 
 .wiki-modal-actions {
+  position: relative;
+  z-index: 2;
   display: flex;
   gap: 10px;
   justify-content: flex-end;
@@ -2381,6 +2448,7 @@
   border-radius: 7px;
 }
 
+/* Поверх img, под рамкой (рамка pointer-events: none) — гарантированная цель для pointer */
 .wiki-crop-interact {
   position: absolute;
   left: 0;

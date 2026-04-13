@@ -2,6 +2,7 @@ import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { parseMwsWorkbenchUrl } from '../utils/parseMwsWorkbenchUrl'
 import { insertMwsWorkbenchTableFromUrl } from './mwsTableInsert'
+import { getStoredMwsSpaceId } from './mwsTableContext'
 
 export const mwsWorkbenchPasteKey = new PluginKey('mwsWorkbenchPaste')
 
@@ -26,7 +27,7 @@ export const MwsWorkbenchPaste = Extension.create({
 
             void (async () => {
               try {
-                await insertMwsWorkbenchTableFromUrl(editor, line)
+                await insertMwsWorkbenchTableFromUrl(editor, line, getStoredMwsSpaceId() ?? null)
               } catch (e) {
                 const msg = e instanceof Error ? e.message : String(e)
                 window.alert(msg)

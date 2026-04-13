@@ -1,0 +1,157 @@
+.auth-page {
+  flex: 1;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  background: var(--dk-bg);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 28px 28px 22px;
+  border-radius: 12px;
+  border: 1px solid var(--dk-border);
+  background: var(--dk-bg);
+  box-shadow: var(--ui-shadow-popover, 0 4px 24px rgba(0, 0, 0, 0.06));
+}
+
+.auth-title {
+  margin: 0 0 10px;
+  font-family: var(--font-compact);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--dk-text-primary);
+}
+
+.auth-hint {
+  margin: 0 0 20px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--dk-text-tertiary);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--dk-text-primary);
+}
+
+.auth-input {
+  font-family: var(--font-compact);
+  font-size: 15px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--dk-control-border);
+  background: var(--dk-bg);
+  color: var(--dk-text-primary);
+  box-sizing: border-box;
+}
+
+.auth-input:focus {
+  outline: 2px solid color-mix(in srgb, var(--ui-action, #907ff0) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.auth-error {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  background: color-mix(in srgb, #e30613 12%, var(--dk-bg));
+  color: var(--dk-text-primary);
+}
+
+.auth-submit {
+  margin-top: 4px;
+  font-family: var(--font-compact);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 11px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--ui-action, #907ff0);
+  color: #fff;
+}
+
+.auth-submit:hover {
+  filter: brightness(1.05);
+}
+
+.auth-footer {
+  margin: 18px 0 0;
+  font-size: 14px;
+  color: var(--dk-text-tertiary);
+}
+
+.auth-link {
+  color: var(--ui-action, #907ff0);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+.auth-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--dk-border);
+  background: var(--dk-toolbar-bg);
+  font-family: var(--font-compact);
+  font-size: 13px;
+}
+
+.auth-bar-user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
+}
+
+.auth-bar-name {
+  font-weight: 600;
+  color: var(--dk-text-primary);
+}
+
+.auth-bar-email {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--dk-text-tertiary);
+  font-size: 12px;
+}
+
+.auth-bar-logout {
+  flex-shrink: 0;
+  font-family: var(--font-compact);
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--dk-control-border);
+  background: var(--dk-bg);
+  color: var(--dk-text-primary);
+  cursor: pointer;
+}
+
+.auth-bar-logout:hover {
+  background: var(--dk-control-fill);
+}

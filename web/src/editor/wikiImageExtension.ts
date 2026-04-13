@@ -2,6 +2,11 @@ import { ResizableNodeView } from '@tiptap/core'
 import type { Node as PmNode } from '@tiptap/pm/model'
 import Image from '@tiptap/extension-image'
 
+/**
+ * ResizableNodeView в @tiptap/extension-image не копирует width/height из узла в el.style при
+ * onUpdate (только onResize/onCommit с ручками). Команды и setNodeMarkup обновляют attrs,
+ * но картинка на экране меняется лишь после перезагрузки — синхронизируем DOM здесь.
+ */
 function syncImageDomFromNode(el: HTMLImageElement, node: PmNode) {
   const attrs = node.attrs as {
     src?: string | null
@@ -107,6 +112,7 @@ export const WikiImage = Image.extend({
 
       dom.style.visibility = 'hidden'
       dom.style.pointerEvents = 'none'
+
       const reveal = () => {
         const pos = getPos()
         const fresh = pos != null ? editor.state.doc.nodeAt(pos) : null
@@ -114,10 +120,13 @@ export const WikiImage = Image.extend({
         dom.style.visibility = ''
         dom.style.pointerEvents = ''
       }
+
       el.onload = () => reveal()
       syncImageDomFromNode(el, node)
       if (el.complete) {
         reveal()
+      } else {
+        syncImageDomFromNode(el, node)
       }
 
       return nodeView

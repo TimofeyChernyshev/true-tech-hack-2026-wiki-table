@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { WikiDocumentEditor } from '../editor/WikiDocumentEditor'
-import { WikiPagesSidebar } from './WikiPagesSidebar'
+import { PagesSidebarToggle, WikiPagesSidebar } from './WikiPagesSidebar'
 import { NewPageModal } from './NewPageModal'
 import {
   getBacklinksForPage,
@@ -66,6 +66,7 @@ export function DocumentPage() {
   const [backlinksRev, setBacklinksRev] = useState(0)
 
   const [newPageOpen, setNewPageOpen] = useState(false)
+  const [pagesSidebarOpen, setPagesSidebarOpen] = useState(true)
 
   const refreshPages = useCallback(() => setPages(loadWikiPageIndex()), [])
 
@@ -173,14 +174,17 @@ export function DocumentPage() {
         onCreate={onConfirmNewPage}
       />
       <div className="wiki-layout-with-pages">
-        <WikiPagesSidebar
-          pages={pages}
-          currentPageKey={pageKey}
-          backlinkKeys={backlinkKeys}
-          onCreatePage={onCreatePage}
-        />
+        {pagesSidebarOpen ? (
+          <WikiPagesSidebar
+            pages={pages}
+            currentPageKey={pageKey}
+            backlinkKeys={backlinkKeys}
+            onCreatePage={onCreatePage}
+          />
+        ) : null}
         <div className="wiki-layout-main-column">
           <header className="wiki-doc-header">
+            <PagesSidebarToggle expanded={pagesSidebarOpen} onClick={() => setPagesSidebarOpen((v) => !v)} />
             <div className="wiki-doc-icon-wrap">
               <DocPageIcon />
             </div>

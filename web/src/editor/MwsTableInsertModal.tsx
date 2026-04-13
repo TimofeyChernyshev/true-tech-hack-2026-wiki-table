@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useState } from 'react'
 
 import { insertMwsWorkbenchTableFromUrl } from './mwsTableInsert'
+import { getStoredMwsSpaceId, persistDefaultMwsSpaceId } from './mwsTableContext'
 
 import type { Editor } from '@tiptap/core'
 
@@ -15,12 +16,14 @@ const EXAMPLE = 'https://tables.mws.ru/workbench/ВАШ_DST_ID/ВАШ_VIEW_ID'
 export function MwsTableInsertModal({ open, editor, onClose }: Props) {
   const dlgId = useId()
   const [url, setUrl] = useState('')
+  const [spaceId, setSpaceId] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
   useEffect(() => {
     if (open) {
       setUrl('')
+      setSpaceId(getStoredMwsSpaceId() ?? '')
       setErr(null)
       setBusy(false)
     }
@@ -31,14 +34,16 @@ export function MwsTableInsertModal({ open, editor, onClose }: Props) {
     setBusy(true)
     setErr(null)
     try {
-      await insertMwsWorkbenchTableFromUrl(editor, url)
+      const sid = spaceId.trim()
+      if (sid) persistDefaultMwsSpaceId(sid)
+      await insertMwsWorkbenchTableFromUrl(editor, url, sid || null)
       onClose()
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e))
     } finally {
       setBusy(false)
     }
-  }, [editor, url, onClose])
+  }, [editor, url, spaceId, onClose])
 
   useEffect(() => {
     if (!open) return
@@ -79,6 +84,15 @@ export function MwsTableInsertModal({ open, editor, onClose }: Props) {
           }}
           autoFocus
           aria-label="URL workbench MWS"
+        />
+        <p className="wiki-modal-subtitle wiki-modal-subtitle--tight">Space ID (для +/− столбца через API)</p>
+        <input
+          type="text"
+          className="wiki-doc-title-input wiki-new-page-input"
+          value={spaceId}
+          onChange={(e) => setSpaceId(e.target.value)}
+          placeholder="spaceId из MWS или VITE_MWS_TABLE_SPACE_ID"
+          aria-label="Space ID MWS"
         />
         {err ? <p className="wiki-modal-error">{err}</p> : null}
         <div className="wiki-modal-actions">

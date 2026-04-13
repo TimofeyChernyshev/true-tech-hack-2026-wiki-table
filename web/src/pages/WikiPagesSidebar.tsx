@@ -39,6 +39,16 @@ export function WikiPagesSidebar({
           Граф связей
         </NavLink>
       </div>
+      <div className="wiki-pages-sidebar-graph-row">
+        <NavLink
+          to="/graph"
+          className={({ isActive }) =>
+            `wiki-pages-sidebar-graph${isActive ? ' wiki-pages-sidebar-graph--active' : ''}`
+          }
+        >
+          Граф связей
+        </NavLink>
+      </div>
       <nav className="wiki-pages-sidebar-nav">
         <ul className="wiki-pages-sidebar-list">
           {sorted.map((p) => (
@@ -84,6 +94,34 @@ export function WikiPagesSidebar({
         </section>
       ) : null}
     </aside>
+  )
+}
+
+export function PagesSidebarToggle({
+  expanded,
+  onClick,
+}: {
+  expanded: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className="wiki-pages-sidebar-toggle"
+      onClick={onClick}
+      aria-expanded={expanded}
+      aria-label={expanded ? 'Скрыть список страниц' : 'Показать список страниц'}
+      title={expanded ? 'Скрыть список страниц' : 'Показать список страниц'}
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+        <path
+          d="M4 6h16M4 12h16M4 18h10"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </svg>
+    </button>
   )
 }
 

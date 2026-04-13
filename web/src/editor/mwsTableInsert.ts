@@ -4,7 +4,11 @@ import { fetchAllTableRecords } from '../api/tableRecords'
 import { parseMwsWorkbenchUrl } from '../utils/parseMwsWorkbenchUrl'
 import { tableResponseToTiptapJson } from './mwsTable'
 
-export async function insertMwsWorkbenchTableFromUrl(editor: Editor, rawInput: string): Promise<void> {
+export async function insertMwsWorkbenchTableFromUrl(
+  editor: Editor,
+  rawInput: string,
+  spaceId?: string | null,
+): Promise<void> {
   const line = rawInput.trim().split(/\r?\n/)[0]?.trim() ?? ''
   const parsed = parseMwsWorkbenchUrl(line)
   if (!parsed) {
@@ -13,7 +17,10 @@ export async function insertMwsWorkbenchTableFromUrl(editor: Editor, rawInput: s
     )
   }
   const data = await fetchAllTableRecords(parsed.dstId, parsed.viewId)
-  const tableDoc = tableResponseToTiptapJson(data, parsed.dstId, parsed.viewId)
+  const sid = spaceId?.trim() || undefined
+  const tableDoc = tableResponseToTiptapJson(data, parsed.dstId, parsed.viewId, {
+    mwsSpaceId: sid ?? null,
+  })
   const urlParagraph = {
     type: 'paragraph' as const,
     content: [
