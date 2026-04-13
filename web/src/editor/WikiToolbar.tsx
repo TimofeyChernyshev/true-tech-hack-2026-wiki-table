@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import type { Editor } from '@tiptap/react'
-import { redo, redoDepth, undo, undoDepth } from '@tiptap/pm/history'
 
 type Props = {
   editor: Editor | null
@@ -54,13 +53,13 @@ export function WikiToolbar({
         <button
           type="button"
           className="tb-nav"
-          disabled={!ed || undoDepth(ed.state) === 0}
+          disabled={!ed || !ed.can().undo()}
           title="Отменить (Ctrl+Z)"
           aria-label="Отменить"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => {
             if (!ed) return
-            undo(ed.state, ed.view.dispatch)
+            ed.chain().focus().undo().run()
           }}
         >
           ↶
@@ -68,13 +67,13 @@ export function WikiToolbar({
         <button
           type="button"
           className="tb-nav"
-          disabled={!ed || redoDepth(ed.state) === 0}
+          disabled={!ed || !ed.can().redo()}
           title="Повторить (Ctrl+Y / Ctrl+Shift+Z)"
           aria-label="Повторить"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => {
             if (!ed) return
-            redo(ed.state, ed.view.dispatch)
+            ed.chain().focus().redo().run()
           }}
         >
           ↷
@@ -84,7 +83,7 @@ export function WikiToolbar({
       <div className="wiki-toolbar-inner">
         <div className="tb-group">
           <TbBtn
-            title="Жирный"
+            title="Жирный (Ctrl+B)"
             active={ed?.isActive('bold')}
             disabled={!ed || !ed.can().toggleBold()}
             onClick={() => ed?.chain().focus().toggleBold().run()}
@@ -92,7 +91,7 @@ export function WikiToolbar({
             B
           </TbBtn>
           <TbBtn
-            title="Курсив"
+            title="Курсив (Ctrl+I)"
             active={ed?.isActive('italic')}
             disabled={!ed}
             onClick={() => ed?.chain().focus().toggleItalic().run()}
@@ -100,7 +99,7 @@ export function WikiToolbar({
             I
           </TbBtn>
           <TbBtn
-            title="Подчёркнутый"
+            title="Подчёркнутый (Ctrl+U)"
             active={ed?.isActive('underline')}
             disabled={!ed}
             onClick={() => ed?.chain().focus().toggleUnderline().run()}
@@ -118,7 +117,7 @@ export function WikiToolbar({
         </div>
         <div className="tb-group tb-group--compact" role="group" aria-label="Выравнивание">
           <TbBtn
-            title="Влево"
+            title="Влево (Ctrl+L)"
             active={ed?.isActive({ textAlign: 'left' })}
             disabled={!ed}
             onClick={() => ed?.chain().focus().setTextAlign('left').run()}
@@ -126,7 +125,7 @@ export function WikiToolbar({
             L
           </TbBtn>
           <TbBtn
-            title="По центру"
+            title="По центру (Ctrl+E)"
             active={ed?.isActive({ textAlign: 'center' })}
             disabled={!ed}
             onClick={() => ed?.chain().focus().setTextAlign('center').run()}
@@ -134,7 +133,7 @@ export function WikiToolbar({
             C
           </TbBtn>
           <TbBtn
-            title="Вправо"
+            title="Вправо (Ctrl+R, не обновляет страницу)"
             active={ed?.isActive({ textAlign: 'right' })}
             disabled={!ed}
             onClick={() => ed?.chain().focus().setTextAlign('right').run()}
@@ -142,7 +141,7 @@ export function WikiToolbar({
             R
           </TbBtn>
           <TbBtn
-            title="По ширине"
+            title="По ширине (Ctrl+J)"
             active={ed?.isActive({ textAlign: 'justify' })}
             disabled={!ed}
             onClick={() => ed?.chain().focus().setTextAlign('justify').run()}
