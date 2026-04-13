@@ -11,6 +11,7 @@ import (
 type Config struct {
 	TableServiceBaseURL        string        `env:"TABLE_SERVICE_BASE_URL,required"`
 	TableServiceRequestTimeout time.Duration `env:"TABLE_SERVICE_REQUEST_TIMEOUT" envDefault:"60s"`
+	Port                       string        `env:"HTTP_PORT,required"`
 }
 
 func Load() (*Config, error) {

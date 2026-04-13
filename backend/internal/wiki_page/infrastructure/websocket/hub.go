@@ -13,8 +13,8 @@ import (
 )
 
 type TableClient interface {
-	UpdateRecords(ctx context.Context, dstID, viewID string, records []domain.RecordUpdate) ([]domain.TableRecord, error)
-	UpdatePage(ctx context.Context, pageID, content string) error
+	SaveRecords(ctx context.Context, dstID, viewID string, records []domain.RecordUpdate) error
+	SavePage(ctx context.Context, roomID string, content string) error
 }
 
 // Hub управляет всеми WebSocket соединениями
@@ -216,12 +216,12 @@ func (h *Hub) saveRoom(ctx context.Context, room *RoomState) {
 	case RoomTypeRecords:
 		var records []domain.RecordUpdate
 		if err := json.Unmarshal(room.state, &records); err == nil && len(records) > 0 {
-			h.tableClient.UpdateRecords(ctx, room.ID, "", records)
+			h.tableClient.SaveRecords(ctx, room.ID, "", records)
 		}
 
 	case RoomTypePage:
 		content := string(room.state)
-		h.tableClient.UpdatePage(ctx, room.ID, content)
+		h.tableClient.SavePage(ctx, room.ID, content)
 	}
 }
 

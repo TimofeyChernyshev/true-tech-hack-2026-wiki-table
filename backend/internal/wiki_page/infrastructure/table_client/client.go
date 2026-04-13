@@ -45,7 +45,7 @@ func NewClientWrapper(baseURL string, requestTimeout time.Duration) (*ClientWrap
 }
 
 // UpdateRecords обновляет записи
-func (c *ClientWrapper) UpdateRecords(ctx context.Context, dstID, viewID string, records []domain.RecordUpdate) ([]TableRecord, error) {
+func (c *ClientWrapper) UpdateRecords(ctx context.Context, dstID, viewID string, records []domain.RecordUpdate) error {
 	body := UpdateRecordsRequest{
 		Records: make([]struct {
 			Fields   map[string]interface{} `json:"fields"`
@@ -70,18 +70,18 @@ func (c *ClientWrapper) UpdateRecords(ctx context.Context, dstID, viewID string,
 
 	resp, err := c.genClient.PatchTablesDstIdRecordsWithResponse(ctx, dstID, params, body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update records: %w", err)
+		return fmt.Errorf("failed to update records: %w", err)
 	}
 
 	if resp.StatusCode() != 200 {
-		return nil, fmt.Errorf("unexpected status: %d, body: %s", resp.StatusCode(), string(resp.Body))
+		return fmt.Errorf("unexpected status: %d, body: %s", resp.StatusCode(), string(resp.Body))
 	}
 
 	if resp.JSON200 == nil {
-		return nil, fmt.Errorf("empty response")
+		return fmt.Errorf("empty response")
 	}
 
-	return resp.JSON200.Records, nil
+	return nil
 }
 
 // UpdateFieldIndex изменяет порядок поля
