@@ -1,4 +1,4 @@
-import type { ErrorResponse, TableDataResponse, UpdateRecordsRequest } from './types'
+import type { ErrorResponse, TableDataResponse } from './types'
 
 function parseJsonBody(text: string): unknown {
   if (!text) return null
@@ -101,21 +101,5 @@ export async function fetchAllTableRecords(
       hasMore: false,
     },
   }
-}
-
-/** PATCH /api/v1/tables/{dstId}/records — ключи в fields как у Fusion (fieldKey=name). */
-export async function updateTableRecords(
-  dstId: string,
-  body: UpdateRecordsRequest,
-  viewId?: string,
-): Promise<void> {
-  const q = new URLSearchParams()
-  if (viewId) q.set('viewId', viewId)
-  const qs = q.toString()
-  const path = `/api/v1/tables/${encodeURIComponent(dstId)}/records${qs ? `?${qs}` : ''}`
-  await requestJson<unknown>(path, {
-    method: 'PATCH',
-    body: JSON.stringify(body),
-  })
 }
 

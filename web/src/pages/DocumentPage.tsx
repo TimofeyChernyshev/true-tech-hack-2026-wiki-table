@@ -1,9 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+
 import { WikiDocumentEditor } from '../editor/WikiDocumentEditor'
+import { WikiPagesSidebar } from './WikiPagesSidebar'
+import {
+  addWikiPage,
+  loadHeaderSubtitle,
+  loadHeaderTitle,
+  loadWikiPageIndex,
+  pageExists,
+  persistHeaderSubtitle,
+  persistHeaderTitle,
+  updatePageTitleInIndex,
+  wikiDocStorageKey,
+} from './wikiPageRegistry'
 import '../App.css'
 
-const TITLE_KEY = 'wiki-doc-title-main'
-const SUBTITLE_KEY = 'wiki-doc-subtitle-main'
 const AUTOSAVE_KEY = 'wiki-autosave-interval-ms'
 
 const AUTOSAVE_OPTIONS = [
@@ -37,10 +49,27 @@ function DocPageIcon() {
 }
 
 export function DocumentPage() {
-  const [title, setTitle] = useState(() => localStorage.getItem(TITLE_KEY) ?? 'Новая страница')
-  const [subtitle, setSubtitle] = useState(
-    () => localStorage.getItem(SUBTITLE_KEY) ?? 'Добавить описание',
+  const { pageKey: rawKey } = useParams<{ pageKey: string }>()
+  const navigate = useNavigate()
+  const pageKey = rawKey ? decodeURIComponent(rawKey) : 'main'
+
+  const [pages, setPages] = useState(loadWikiPageIndex)
+
+  const refreshPages = useCallback(() => setPages(loadWikiPageIndex()), [])
+
+  useEffect(() => {
+    if (!pageExists(pageKey)) {
+      navigate('/p/main', { replace: true })
+    }
+  }, [pageKey, navigate])
+
+  const meta = pages.find((p) => p.key === pageKey)
+
+  const [title, setTitle] = useState(() =>
+    loadHeaderTitle(pageKey, meta?.title ?? 'Новая страница'),
   )
+  const [subtitle, setSubtitle] = useState(() => loadHeaderSubtitle(pageKey, 'Добавить описание'))
+
   const [autoSaveMs, setAutoSaveMs] = useState(() => {
     try {
       const v = parseInt(localStorage.getItem(AUTOSAVE_KEY) ?? '10000', 10)
@@ -51,12 +80,26 @@ export function DocumentPage() {
   })
 
   useEffect(() => {
-    localStorage.setItem(TITLE_KEY, title)
-  }, [title])
+    const m = loadWikiPageIndex().find((p) => p.key === pageKey)
+    setTitle(loadHeaderTitle(pageKey, m?.title ?? 'Новая страница'))
+    setSubtitle(loadHeaderSubtitle(pageKey, 'Добавить описание'))
+  }, [pageKey])
 
   useEffect(() => {
-    localStorage.setItem(SUBTITLE_KEY, subtitle)
-  }, [subtitle])
+    persistHeaderTitle(pageKey, title)
+  }, [title, pageKey])
+
+  useEffect(() => {
+    persistHeaderSubtitle(pageKey, subtitle)
+  }, [subtitle, pageKey])
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      updatePageTitleInIndex(pageKey, title)
+      refreshPages()
+    }, 500)
+    return () => clearTimeout(t)
+  }, [title, pageKey, refreshPages])
 
   useEffect(() => {
     try {
@@ -66,49 +109,68 @@ export function DocumentPage() {
     }
   }, [autoSaveMs])
 
+  const onCreatePage = useCallback(() => {
+    const name = window.prompt('Название новой страницы', 'Новая страница')
+    if (name === null) return
+    const p = addWikiPage(name.trim() || 'Без названия')
+    refreshPages()
+    navigate(`/p/${encodeURIComponent(p.key)}`)
+  }, [navigate, refreshPages])
+
+  if (!pageExists(pageKey)) {
+    return null
+  }
+
+  const storageKey = wikiDocStorageKey(pageKey)
+
   return (
     <div className="wiki-app">
-      <header className="wiki-doc-header">
-        <div className="wiki-doc-icon-wrap">
-          <DocPageIcon />
-        </div>
-        <div className="wiki-doc-titles">
-          <input
-            className="wiki-doc-title-input"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            aria-label="Заголовок страницы"
-          />
-          <input
-            className="wiki-doc-subtitle-input"
-            value={subtitle}
-            onChange={(e) => setSubtitle(e.target.value)}
-            aria-label="Подзаголовок"
-          />
-        </div>
-        <label className="wiki-autosave-label">
-          <span className="wiki-autosave-label-text">Автосохранение</span>
-          <select
-            className="wiki-autosave-select"
-            value={autoSaveMs}
-            onChange={(e) => setAutoSaveMs(Number(e.target.value))}
-            aria-label="Интервал автосохранения"
-          >
-            {AUTOSAVE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </header>
+      <div className="wiki-layout-with-pages">
+        <WikiPagesSidebar pages={pages} onCreatePage={onCreatePage} />
+        <div className="wiki-layout-main-column">
+          <header className="wiki-doc-header">
+            <div className="wiki-doc-icon-wrap">
+              <DocPageIcon />
+            </div>
+            <div className="wiki-doc-titles">
+              <input
+                className="wiki-doc-title-input"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                aria-label="Заголовок страницы"
+              />
+              <input
+                className="wiki-doc-subtitle-input"
+                value={subtitle}
+                onChange={(e) => setSubtitle(e.target.value)}
+                aria-label="Подзаголовок"
+              />
+            </div>
+            <label className="wiki-autosave-label">
+              <span className="wiki-autosave-label-text">Локальное автосохранение</span>
+              <select
+                className="wiki-autosave-select"
+                value={autoSaveMs}
+                onChange={(e) => setAutoSaveMs(Number(e.target.value))}
+                aria-label="Интервал автосохранения"
+              >
+                {AUTOSAVE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </header>
 
-      <WikiDocumentEditor
-        storageKey="wiki-doc-main"
-        pageKey="main"
-        excerpt={subtitle}
-        autoSaveIntervalMs={autoSaveMs}
-      />
+          <WikiDocumentEditor
+            storageKey={storageKey}
+            pageKey={pageKey}
+            excerpt={subtitle}
+            autoSaveIntervalMs={autoSaveMs}
+          />
+        </div>
+      </div>
     </div>
   )
 }

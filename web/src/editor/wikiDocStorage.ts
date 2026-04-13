@@ -1,5 +1,4 @@
 import type { JSONContent } from '@tiptap/core'
-import { fetchWikiPage, putWikiPage } from '../api/wikiPages'
 
 const DEFAULT_DOC: JSONContent = {
   type: 'doc',
@@ -18,31 +17,11 @@ export function loadWikiDoc(storageKey: string): JSONContent {
   return DEFAULT_DOC
 }
 
-/** Сначала бэкенд, при отсутствии или ошибке сети — localStorage. */
-export async function loadWikiDocWithRemoteFallback(storageKey: string): Promise<JSONContent> {
-  try {
-    const remote = await fetchWikiPage(storageKey)
-    if (remote) {
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(remote))
-      } catch {
-        /* ignore */
-      }
-      return remote
-    }
-  } catch {
-    /* бэкенд не запущен или недоступен */
-  }
-  return loadWikiDoc(storageKey)
-}
-
-export function saveWikiDoc(storageKey: string, doc: JSONContent) {
+/** Сохранение только локально; синхронизация с сервером — через WebSocket (вне этого модуля). */
+export function persistWikiDocLocal(storageKey: string, doc: JSONContent) {
   try {
     localStorage.setItem(storageKey, JSON.stringify(doc))
   } catch {
     /* ignore */
   }
-  void putWikiPage(storageKey, doc).catch(() => {
-    /* офлайн / бэкенд выключен — остаётся только localStorage */
-  })
 }

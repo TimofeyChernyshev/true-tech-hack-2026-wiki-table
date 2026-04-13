@@ -1,42 +1,22 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import type { Editor, JSONContent } from '@tiptap/core'
 
+import { Collaboration } from '@tiptap/extension-collaboration'
+
 import { useEditor, EditorContent } from '@tiptap/react'
-
-import StarterKit from '@tiptap/starter-kit'
-
-import Placeholder from '@tiptap/extension-placeholder'
-
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
-
-import TextAlign from '@tiptap/extension-text-align'
-
-import { TableCell } from '@tiptap/extension-table-cell'
-
-import { TableHeader } from '@tiptap/extension-table-header'
-
-import { Gapcursor } from '@tiptap/extension-gapcursor'
-
-import Link from '@tiptap/extension-link'
-
-import Image from '@tiptap/extension-image'
-
-import { createLowlight, common } from 'lowlight'
-
-import { SlashCommand } from './slashCommand'
 
 import { WikiToolbar } from './WikiToolbar'
 
-import { loadWikiDocWithRemoteFallback, saveWikiDoc } from './wikiDocStorage'
+import { loadWikiDoc, persistWikiDocLocal } from './wikiDocStorage'
 
-import { MwsTable, MwsTableRow } from './mwsTable'
+import { WikiHotkeysModal, WIKI_OPEN_HOTKEY_HELP } from './WikiHotkeysModal'
 
-import { MwsWorkbenchPaste } from './mwsWorkbenchPaste'
+import { attachYjsBroadcastChannel, broadcastChannelName } from '../collab/yjsBroadcast'
 
-import { docHasMwsTables, refreshMwsTables } from './refreshMwsTables'
+import { wikiBaseExtensions } from './wikiEditorExtensions'
 
-import { clearMwsPushStateForDst, pushMwsTableEditsFromDoc } from './pushMwsTableEdits'
+import { createWikiYDoc, encodeYDocBase64, wikiYStateStorageKey } from './wikiYdocBootstrap'
 
 import { WikiBubbleMenu } from './WikiBubbleMenu'
 
@@ -78,98 +58,6 @@ import './editor.css'
 
 
 
-const lowlight = createLowlight(common)
-
-
-
-const wikiEditorExtensions = [
-
-  StarterKit.configure({
-
-    codeBlock: false,
-
-    heading: { levels: [1, 2, 3] },
-
-    undoRedo: { depth: 200, newGroupDelay: 500 },
-
-    underline: {},
-
-  }),
-
-  CodeBlockLowlight.configure({
-
-    lowlight,
-
-    defaultLanguage: 'javascript',
-
-  }),
-
-  TextAlign.configure({
-
-    types: ['heading', 'paragraph', 'blockquote'],
-
-  }),
-
-  Placeholder.configure({ placeholder: '' }),
-
-  Gapcursor,
-
-  Link.configure({
-
-    openOnClick: true,
-
-    HTMLAttributes: {
-
-      class: 'wiki-editor-link',
-
-      rel: 'noopener noreferrer',
-
-    },
-
-  }),
-
-  Image.configure({
-
-    allowBase64: true,
-
-    resize: {
-
-      enabled: true,
-
-      minWidth: 72,
-
-      minHeight: 48,
-
-      alwaysPreserveAspectRatio: true,
-
-    },
-
-    HTMLAttributes: { class: 'wiki-editor-image' },
-
-  }),
-
-  MwsTable.configure({
-
-    resizable: false,
-
-    HTMLAttributes: { class: 'wiki-tiptap-table' },
-
-  }),
-
-  MwsTableRow,
-
-  TableHeader,
-
-  TableCell,
-
-  MwsWorkbenchPaste,
-
-  SlashCommand,
-
-]
-
-
-
 type LoadedProps = {
 
   storageKey: string
@@ -204,17 +92,18 @@ function WikiDocumentEditorLoaded({
 
 }: LoadedProps) {
 
-  const mwsRefreshLock = useRef(false)
-
-  const mwsPushLock = useRef(false)
-
-  const mwsPushTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const mwsLastPushedTableContent = useRef<Map<string, string>>(new Map())
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const editorRef = useRef<Editor | null>(null)
 
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const forceSaveAllRef = useRef<(ed: Editor) => void>(() => {})
+
+  const [ydoc] = useState(() => createWikiYDoc(pageKey, initialDoc, wikiBaseExtensions))
+
+  const extensions = useMemo(
+    () => [...wikiBaseExtensions, Collaboration.configure({ document: ydoc })],
+    [ydoc],
+  )
 
 
 
@@ -234,6 +123,8 @@ function WikiDocumentEditorLoaded({
 
   const [versions, setVersions] = useState(() => listDocVersions(storageKey))
 
+  const [hotkeysOpen, setHotkeysOpen] = useState(false)
+
 
 
   const flushSave = useCallback(
@@ -242,7 +133,7 @@ function WikiDocumentEditorLoaded({
 
       const json = ed.getJSON()
 
-      saveWikiDoc(storageKey, json)
+      persistWikiDocLocal(storageKey, json)
 
       maybeRecordDocVersion(storageKey, json)
 
@@ -274,38 +165,89 @@ function WikiDocumentEditorLoaded({
 
   )
 
+  const runScheduledAutosave = useCallback(
+    (ed: Editor) => {
+      const json = ed.getJSON()
+      persistWikiDocLocal(storageKey, json)
+      maybeRecordDocVersion(storageKey, json)
+      try {
+        localStorage.setItem(wikiYStateStorageKey(pageKey), encodeYDocBase64(ydoc))
+      } catch {
+        /* ignore */
+      }
+    },
+    [storageKey, pageKey, ydoc],
+  )
 
+  const forceSaveAll = useCallback(
+    (ed: Editor) => {
+      const json = ed.getJSON()
+      persistWikiDocLocal(storageKey, json)
+      try {
+        localStorage.setItem(wikiYStateStorageKey(pageKey), encodeYDocBase64(ydoc))
+      } catch {
+        /* ignore */
+      }
+      maybeRecordDocVersion(storageKey, json)
+    },
+    [storageKey, pageKey, ydoc],
+  )
 
-  const scheduleMwsPush = useCallback((ed: Editor) => {
-    if (!docHasMwsTables(ed)) return
-    if (mwsPushTimer.current) clearTimeout(mwsPushTimer.current)
-    mwsPushTimer.current = setTimeout(() => {
-      mwsPushTimer.current = null
-      if (mwsPushLock.current) return
-      mwsPushLock.current = true
-      const docJson = ed.getJSON()
-      void pushMwsTableEditsFromDoc(docJson, mwsLastPushedTableContent.current)
-        .then(async () => {
-          const cur = editorRef.current
-          if (!cur || mwsRefreshLock.current) return
-          await refreshMwsTables(cur, {
-            addToHistory: false,
-            onTableReplaced: (dstId) =>
-              clearMwsPushStateForDst(mwsLastPushedTableContent.current, dstId),
-          })
-        })
-        .catch((err) => console.warn('MWS: не удалось отправить правки таблицы', err))
-        .finally(() => {
-          mwsPushLock.current = false
-        })
-    }, 1800)
+  useEffect(() => {
+    forceSaveAllRef.current = forceSaveAll
+  }, [forceSaveAll])
+
+  const handleEditorKeyDown = useCallback((_view: unknown, event: Event) => {
+    const e = event as KeyboardEvent
+    const ed = editorRef.current
+    if (!ed) return false
+    const mod = e.ctrlKey || e.metaKey
+    if (!mod || e.altKey) return false
+    if (e.shiftKey && (e.key === 'r' || e.key === 'R')) return false
+    if (!e.shiftKey && (e.key === 's' || e.key === 'S')) {
+      e.preventDefault()
+      forceSaveAllRef.current(ed)
+      return true
+    }
+    if (!e.shiftKey && (e.key === 'r' || e.key === 'R')) {
+      e.preventDefault()
+      return ed.chain().focus().setTextAlign('right').run()
+    }
+    if (e.shiftKey && (e.key === '?' || e.code === 'Slash')) {
+      e.preventDefault()
+      window.dispatchEvent(new CustomEvent(WIKI_OPEN_HOTKEY_HELP))
+      return true
+    }
+    if (!e.shiftKey && (e.key === 'l' || e.key === 'L')) {
+      e.preventDefault()
+      return ed.chain().focus().setTextAlign('left').run()
+    }
+    if (!e.shiftKey && (e.key === 'e' || e.key === 'E')) {
+      e.preventDefault()
+      return ed.chain().focus().setTextAlign('center').run()
+    }
+    if (!e.shiftKey && (e.key === 'j' || e.key === 'J')) {
+      e.preventDefault()
+      return ed.chain().focus().setTextAlign('justify').run()
+    }
+    if (!e.shiftKey && (e.key === 'u' || e.key === 'U')) {
+      e.preventDefault()
+      return ed.chain().focus().toggleUnderline().run()
+    }
+    return false
   }, [])
 
   const editor = useEditor({
 
-    extensions: wikiEditorExtensions,
+    extensions,
 
-    content: initialDoc,
+    onCreate: ({ editor: ed }) => {
+      editorRef.current = ed
+    },
+
+    onDestroy: () => {
+      editorRef.current = null
+    },
 
     editorProps: {
 
@@ -317,21 +259,21 @@ function WikiDocumentEditorLoaded({
 
       },
 
+      handleKeyDown: handleEditorKeyDown,
+
     },
 
     onUpdate: ({ editor: ed }) => {
 
-      scheduleSave(ed)
+      const json = ed.getJSON()
 
-      scheduleMwsPush(ed)
+      persistWikiDocLocal(storageKey, json)
+
+      scheduleSave(ed)
 
     },
 
   })
-
-  useEffect(() => {
-    editorRef.current = editor ?? null
-  }, [editor])
 
   useEffect(() => {
 
@@ -339,15 +281,56 @@ function WikiDocumentEditorLoaded({
 
     const id = window.setInterval(() => {
 
-      flushSave(editor)
+      runScheduledAutosave(editor)
 
     }, autoSaveIntervalMs)
 
     return () => clearInterval(id)
 
-  }, [editor, autoSaveIntervalMs, flushSave])
+  }, [editor, autoSaveIntervalMs, runScheduledAutosave])
 
+  useEffect(() => {
+    const onHelp = () => setHotkeysOpen(true)
+    window.addEventListener(WIKI_OPEN_HOTKEY_HELP, onHelp)
+    return () => window.removeEventListener(WIKI_OPEN_HOTKEY_HELP, onHelp)
+  }, [])
 
+  useEffect(() => {
+    if (!hotkeysOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setHotkeysOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [hotkeysOpen])
+
+  useEffect(() => {
+    return attachYjsBroadcastChannel(ydoc, broadcastChannelName(pageKey, storageKey))
+  }, [ydoc, pageKey, storageKey])
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const persistY = () => {
+      try {
+        localStorage.setItem(wikiYStateStorageKey(pageKey), encodeYDocBase64(ydoc))
+      } catch {
+        /* ignore */
+      }
+    }
+    const onUp = () => {
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => {
+        timer = null
+        persistY()
+      }, 500)
+    }
+    ydoc.on('update', onUp)
+    return () => {
+      ydoc.off('update', onUp)
+      if (timer) clearTimeout(timer)
+      persistY()
+    }
+  }, [ydoc, pageKey])
 
   useEffect(() => {
 
@@ -355,74 +338,9 @@ function WikiDocumentEditorLoaded({
 
       if (saveTimer.current) clearTimeout(saveTimer.current)
 
-      if (mwsPushTimer.current) clearTimeout(mwsPushTimer.current)
-
     }
 
   }, [])
-
-
-
-  const runQuietMwsRefresh = useCallback(() => {
-
-    if (!editor || mwsRefreshLock.current) return
-
-    if (!docHasMwsTables(editor)) return
-
-    mwsRefreshLock.current = true
-
-    void refreshMwsTables(editor, {
-      addToHistory: false,
-      onTableReplaced: (dstId) => clearMwsPushStateForDst(mwsLastPushedTableContent.current, dstId),
-    })
-      .catch(() => {})
-      .finally(() => {
-        mwsRefreshLock.current = false
-      })
-
-  }, [editor])
-
-
-
-  useEffect(() => {
-
-    if (!editor) return
-
-    const intervalMs = 5000
-
-    const id = window.setInterval(() => {
-
-      if (document.visibilityState !== 'visible') return
-
-      runQuietMwsRefresh()
-
-    }, intervalMs)
-
-    return () => clearInterval(id)
-
-  }, [editor, runQuietMwsRefresh])
-
-
-
-  useEffect(() => {
-
-    if (!editor) return
-
-    const onVis = () => {
-
-      if (document.visibilityState !== 'visible') return
-
-      runQuietMwsRefresh()
-
-    }
-
-    document.addEventListener('visibilitychange', onVis)
-
-    return () => document.removeEventListener('visibilitychange', onVis)
-
-  }, [editor, runQuietMwsRefresh])
-
-
 
   const onImageConfirm = useCallback(
 
@@ -446,11 +364,11 @@ function WikiDocumentEditorLoaded({
 
       editor.chain().focus().setContent(doc).run()
 
-      flushSave(editor)
+      forceSaveAll(editor)
 
     },
 
-    [editor, flushSave],
+    [editor, forceSaveAll],
 
   )
 
@@ -515,6 +433,8 @@ function WikiDocumentEditorLoaded({
         onConfirm={onImageConfirm}
 
       />
+
+      <WikiHotkeysModal open={hotkeysOpen} onClose={() => setHotkeysOpen(false)} />
 
       <TimeMachineModal
 
@@ -626,91 +546,13 @@ export function WikiDocumentEditor({
 
 }: Props) {
 
-  const [bootDoc, setBootDoc] = useState<JSONContent | null>(null)
-
-  const [bootLoading, setBootLoading] = useState(true)
-
-
-
-  useEffect(() => {
-
-    let alive = true
-
-    setBootLoading(true)
-
-    setBootDoc(null)
-
-    void loadWikiDocWithRemoteFallback(storageKey).then((doc) => {
-
-      if (!alive) return
-
-      setBootDoc(doc)
-
-      setBootLoading(false)
-
-    })
-
-    return () => {
-
-      alive = false
-
-    }
-
-  }, [storageKey])
-
-
-
-  if (bootLoading || !bootDoc) {
-
-    return (
-
-      <>
-
-        <WikiToolbar
-
-          editor={null}
-
-          onInsertImageFile={undefined}
-
-          onOpenComments={undefined}
-
-          onOpenCommentHistory={undefined}
-
-          onOpenCommentAccess={undefined}
-
-          onOpenTimeMachine={undefined}
-
-        />
-
-        <main className="wiki-main wiki-main--wide">
-
-          <div className="wiki-main-inner">
-
-            <div className="wiki-editor-wrap">
-
-              <div className="wiki-editor-root wiki-editor-loading">Загрузка документа…</div>
-
-            </div>
-
-            {children}
-
-          </div>
-
-        </main>
-
-      </>
-
-    )
-
-  }
-
-
+  const bootDoc = useMemo(() => loadWikiDoc(storageKey), [storageKey])
 
   return (
 
     <WikiDocumentEditorLoaded
 
-      key={storageKey}
+      key={`${storageKey}::${pageKey}`}
 
       storageKey={storageKey}
 
