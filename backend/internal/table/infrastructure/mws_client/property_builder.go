@@ -1,7 +1,7 @@
 package mwsclient
 
 import (
-	"true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/domain"
+	"true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/table/domain"
 )
 
 // buildFieldCreateProperty создаёт FieldCreateProperty для конкретного типа поля

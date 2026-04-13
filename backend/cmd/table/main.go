@@ -7,10 +7,10 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	"true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/application"
-	"true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/infrastructure/config"
-	mwsclient "true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/infrastructure/mws_client"
-	tableshttp "true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/infrastructure/receiver/http"
+	"true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/table/application"
+	"true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/table/infrastructure/config"
+	mwsclient "true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/table/infrastructure/mws_client"
+	tableshttp "true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/table/infrastructure/receiver/http"
 )
 
 func main() {
