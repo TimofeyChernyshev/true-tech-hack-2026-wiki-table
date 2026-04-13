@@ -9,11 +9,14 @@ const INDEX_KEY = 'wiki-pages-index-v1'
 const LEGACY_TITLE_MAIN = 'wiki-doc-title-main'
 const LEGACY_SUB_MAIN = 'wiki-doc-subtitle-main'
 
+/** Только ASCII в ключе страницы — иначе запись не проходила валидацию при чтении индекса. */
 function slugBase(name: string): string {
   const t = name
     .trim()
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
   return t.length ? t.slice(0, 48) : 'page'
 }

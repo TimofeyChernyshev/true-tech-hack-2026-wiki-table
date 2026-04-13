@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   appendCommentAudit,
   getOrCreateDeviceId,
@@ -10,14 +10,44 @@ import {
   saveThreads,
 } from './commentAdvancedStore'
 import type { AdvancedComment, CommentAccessMode, ThreadMeta } from './commentAdvancedTypes'
+import { WIKI_COMMENT_GUTTER_REFRESH, WIKI_PAGE_COMMENT_ANCHOR } from './commentScopeConstants'
+
+export type CommentsScope =
+  | { mode: 'page' }
+  | { mode: 'block'; anchorKey: string; excerpt: string }
 
 type Props = {
   open: boolean
   onClose: () => void
   pageKey: string
   excerpt?: string
-  /** Увеличить после смены «доступа», чтобы перечитать настройки */
+  scope: CommentsScope
   accessRevision?: number
+}
+
+function bumpGutter() {
+  try {
+    window.dispatchEvent(new CustomEvent(WIKI_COMMENT_GUTTER_REFRESH))
+  } catch {
+    /* ignore */
+  }
+}
+
+function normalizeThreads(raw: Record<string, ThreadMeta>): Record<string, ThreadMeta> {
+  return Object.fromEntries(
+    Object.entries(raw).map(([k, v]) => [
+      k,
+      {
+        ...v,
+        anchorKey: v.anchorKey ?? WIKI_PAGE_COMMENT_ANCHOR,
+      },
+    ]),
+  )
+}
+
+function threadAnchor(tm: ThreadMeta | undefined): string | null {
+  if (!tm || tm.deleted) return null
+  return tm.anchorKey ?? WIKI_PAGE_COMMENT_ANCHOR
 }
 
 function initialLetter(name: string): string {
@@ -28,33 +58,26 @@ function initialLetter(name: string): string {
 function avatarHue(name: string): string {
   let h = 0
   for (let i = 0; i < name.length; i += 1) h = (h + name.charCodeAt(i) * 13) % 360
-  return `hsl(${h} 45% 72%)`
+  return `hsl(${h} 52% 62%)`
 }
 
-function startOfLocalDay(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
-}
-
-/** Сегодня — только время; вчера — «Вчера, время»; старше — дата + время */
-function formatMessageTime(ts: number) {
+/** 27.10.25 в 18:03 */
+function formatCommentStamp(ts: number) {
   const d = new Date(ts)
-  const now = new Date()
-  const t0 = startOfLocalDay(now)
-  const tMsg = startOfLocalDay(d)
-  const timeStr = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-  if (tMsg === t0) return timeStr
-  const diffDays = Math.round((t0 - tMsg) / 86400000)
-  if (diffDays === 1) return `Вчера, ${timeStr}`
-  const dateOpts: Intl.DateTimeFormatOptions =
-    d.getFullYear() !== now.getFullYear()
-      ? { day: 'numeric', month: 'short', year: 'numeric' }
-      : { day: 'numeric', month: 'short' }
-  return `${d.toLocaleDateString('ru-RU', dateOpts)}, ${timeStr}`
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const yy = String(d.getFullYear()).slice(-2)
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mi = String(d.getMinutes()).padStart(2, '0')
+  return `${dd}.${mm}.${yy} в ${hh}:${mi}`
 }
 
-/** Название ветки — первая строка корневого сообщения */
-function threadDisplayName(root: AdvancedComment): string {
-  const line = root.text.trim().split(/\r?\n/)[0]?.trim() || 'Ветка без текста'
+function threadDisplayName(root: AdvancedComment, tm?: ThreadMeta): string {
+  if (tm?.contextExcerpt?.trim()) {
+    const t = tm.contextExcerpt.trim()
+    return t.length > 120 ? `${t.slice(0, 117)}…` : t
+  }
+  const line = root.text.trim().split(/\r?\n/)[0]?.trim() || 'Обсуждение'
   return line.length > 100 ? `${line.slice(0, 100)}…` : line
 }
 
@@ -75,7 +98,7 @@ function newAuditId() {
   return `a-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
-type MsgRowProps = {
+type RowProps = {
   c: AdvancedComment
   deviceId: string
   locked: boolean
@@ -88,7 +111,7 @@ type MsgRowProps = {
   onReply: () => void
 }
 
-function CommentMessengerRow({
+function FigmaCommentRow({
   c,
   deviceId,
   locked,
@@ -99,141 +122,72 @@ function CommentMessengerRow({
   editComment,
   softDeleteComment,
   onReply,
-}: MsgRowProps) {
-  const mine = c.authorId === deviceId
-  const [dragX, setDragX] = useState(0)
-  const drag = useRef({ on: false, x0: 0, y0: 0, replied: false })
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    if (e.button !== 0 || locked || !canPostGlobally) return
-    if ((e.target as HTMLElement).closest('button')) return
-    drag.current = { on: true, x0: e.clientX, y0: e.clientY, replied: false }
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-    setDragX(0)
-  }
-
-  const endDrag = (e: React.PointerEvent) => {
-    if (!drag.current.on) return
-    const dx = e.clientX - drag.current.x0
-    try {
-      ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
-    } catch {
-      /* ignore */
-    }
-    drag.current.on = false
-    if (!drag.current.replied && dx >= 44) {
-      drag.current.replied = true
-      onReply()
-    }
-    setDragX(0)
-  }
-
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!drag.current.on) return
-    const dy = Math.abs(e.clientY - drag.current.y0)
-    const dx = e.clientX - drag.current.x0
-    if (dy > 22) {
-      drag.current.on = false
-      setDragX(0)
-      try {
-        ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
-      } catch {
-        /* ignore */
-      }
-      return
-    }
-    if (dx > 0) setDragX(Math.min(dx, 64))
-    else setDragX(0)
-  }
-
+}: RowProps) {
   return (
-    <div className={`wiki-msg-row${mine ? ' wiki-msg-row--mine' : ''}`}>
-      <div
-        className="wiki-msg-swipe"
-        style={{ transform: `translateX(${dragX}px)` }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
-      >
-        {dragX > 8 ? (
-          <span className="wiki-msg-swipe-hint" aria-hidden>
-            Ответить
-          </span>
-        ) : null}
-        <article className={`wiki-msg-bubble${mine ? ' wiki-msg-bubble--mine' : ''}`}>
-          <div className="wiki-msg-bubble-top">
-            <div className="wiki-msg-bubble-user">
-              {!mine ? (
-                <div
-                  className="wiki-msg-bubble-avatar"
-                  style={{ background: avatarHue(c.author) }}
-                  aria-hidden
-                >
-                  {initialLetter(c.author)}
-                </div>
-              ) : null}
-              <div className="wiki-msg-bubble-meta">
-                <span className="wiki-msg-bubble-name">{c.author}</span>
-                <time dateTime={new Date(c.createdAt).toISOString()}>
-                  {formatMessageTime(c.createdAt)}
-                  {c.editedAt ? ' · изм.' : ''}
-                </time>
-              </div>
-            </div>
-            <div className="wiki-msg-bubble-actions">
-              <button
-                type="button"
-                className={`wiki-msg-like${c.likedBy.includes(deviceId) ? ' is-on' : ''}`}
-                title="Лайк"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  likeToggle(c.id)
-                }}
-              >
-                {c.likes} ♥
-              </button>
-              <div className="wiki-msg-more-wrap">
-                <button
-                  type="button"
-                  className="wiki-msg-more"
-                  aria-expanded={menuFor === c.id}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setMenuFor(menuFor === c.id ? null : c.id)
-                  }}
-                >
-                  ···
-                </button>
-                {menuFor === c.id ? (
-                  <div className="wiki-msg-menu" role="menu" onClick={(e) => e.stopPropagation()}>
-                    <button type="button" role="menuitem" onClick={() => editComment(c.id)}>
-                      Изменить
-                    </button>
-                    <button type="button" role="menuitem" onClick={() => softDeleteComment(c.id)}>
-                      Удалить
-                    </button>
-                    {canPostGlobally && !locked ? (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          onReply()
-                          setMenuFor(null)
-                        }}
-                      >
-                        Ответить
-                      </button>
-                    ) : null}
-                  </div>
+    <li className="wiki-comments-figma-item">
+      <div className="wiki-comments-figma-item-top">
+        <div className="wiki-comments-figma-user">
+          <div className="wiki-comments-figma-avatar" style={{ background: avatarHue(c.author) }} aria-hidden>
+            {initialLetter(c.author)}
+          </div>
+          <div className="wiki-comments-figma-user-meta">
+            <span className="wiki-comments-figma-name">{c.author}</span>
+            <time dateTime={new Date(c.createdAt).toISOString()}>
+              {formatCommentStamp(c.createdAt)}
+              {c.editedAt ? ' · изм.' : ''}
+            </time>
+          </div>
+        </div>
+        <div className="wiki-comments-figma-actions">
+          <button
+            type="button"
+            className="wiki-comments-figma-like"
+            title="Нравится"
+            onClick={() => likeToggle(c.id)}
+          >
+            <span className="wiki-comments-figma-like-n">{c.likes}</span>
+            <span aria-hidden>👍</span>
+          </button>
+          <div className="wiki-comments-figma-more-wrap">
+            <button
+              type="button"
+              className="wiki-comments-figma-more"
+              aria-expanded={menuFor === c.id}
+              onClick={() => setMenuFor(menuFor === c.id ? null : c.id)}
+            >
+              ···
+            </button>
+            {menuFor === c.id ? (
+              <div className="wiki-comments-figma-menu" role="menu" onClick={(e) => e.stopPropagation()}>
+                {c.authorId === deviceId ? (
+                  <button type="button" role="menuitem" onClick={() => editComment(c.id)}>
+                    Изменить
+                  </button>
+                ) : null}
+                {c.authorId === deviceId ? (
+                  <button type="button" role="menuitem" onClick={() => softDeleteComment(c.id)}>
+                    Удалить
+                  </button>
+                ) : null}
+                {canPostGlobally && !locked ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      onReply()
+                      setMenuFor(null)
+                    }}
+                  >
+                    Ответить
+                  </button>
                 ) : null}
               </div>
-            </div>
+            ) : null}
           </div>
-          <div className="wiki-msg-bubble-body">{renderBody(c.text)}</div>
-        </article>
+        </div>
       </div>
-    </div>
+      <div className="wiki-comments-figma-body">{renderBody(c.text)}</div>
+    </li>
   )
 }
 
@@ -244,6 +198,7 @@ export function CommentsDrawer({
   onClose,
   pageKey,
   excerpt = '',
+  scope,
   accessRevision = 0,
 }: Props) {
   const deviceId = useMemo(() => getOrCreateDeviceId(), [])
@@ -259,18 +214,18 @@ export function CommentsDrawer({
     }
   })
   const [text, setText] = useState('')
-  const [replyTo, setReplyTo] = useState<{ threadId: string; parentId: string; label: string } | null>(
-    null,
-  )
+  const [replyTo, setReplyTo] = useState<{ threadId: string; parentId: string; label: string } | null>(null)
   const [loadError, setLoadError] = useState(false)
   const [menuFor, setMenuFor] = useState<string | null>(null)
-  /** null — список веток; иначе открыта одна ветка для обсуждения */
   const [viewThreadId, setViewThreadId] = useState<string | null>(null)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
 
   const reload = useCallback(() => {
     try {
       setComments(loadCommentsAdvanced(pageKey))
-      setThreads(loadThreads(pageKey))
+      setThreads(normalizeThreads(loadThreads(pageKey)))
       setAccess(loadAccessMode(pageKey))
       setLoadError(false)
     } catch {
@@ -283,11 +238,15 @@ export function CommentsDrawer({
   }, [open, reload, accessRevision])
 
   useEffect(() => {
-    if (!open) setViewThreadId(null)
+    if (!open) {
+      setViewThreadId(null)
+      setReplyTo(null)
+    }
   }, [open])
 
   useEffect(() => {
     setViewThreadId(null)
+    setReplyTo(null)
   }, [pageKey])
 
   useEffect(() => {
@@ -305,19 +264,26 @@ export function CommentsDrawer({
   const persist = useCallback(
     (nextC: AdvancedComment[], nextT: Record<string, ThreadMeta>) => {
       setComments(nextC)
-      setThreads(nextT)
+      setThreads(normalizeThreads(nextT))
       saveCommentsAdvanced(pageKey, nextC)
       saveThreads(pageKey, nextT)
+      bumpGutter()
     },
     [pageKey],
   )
 
-  const ensureThread = useCallback(
-    (tid: string, cur: Record<string, ThreadMeta>) => {
+  const ensureThreadWithMeta = useCallback(
+    (tid: string, cur: Record<string, ThreadMeta>, patch: Partial<ThreadMeta>) => {
       if (cur[tid]) return cur
       return {
         ...cur,
-        [tid]: { id: tid, resolved: false },
+        [tid]: {
+          id: tid,
+          resolved: false,
+          anchorKey: patch.anchorKey ?? WIKI_PAGE_COMMENT_ANCHOR,
+          contextExcerpt: patch.contextExcerpt ?? null,
+          ...patch,
+        },
       }
     },
     [],
@@ -337,32 +303,37 @@ export function CommentsDrawer({
     [comments, threads, deviceId, persist],
   )
 
-  const editComment = useCallback(
-    (id: string) => {
-      const c = comments.find((x) => x.id === id)
-      if (!c) return
-      const n = window.prompt('Текст', c.text)
-      if (n === null) return
-      appendCommentAudit(pageKey, {
-        id: newAuditId(),
-        ts: Date.now(),
-        kind: 'comment_edit',
-        threadId: c.threadId,
-        commentId: id,
-        author: c.author,
-        textBefore: c.text,
-        textAfter: n,
-      })
-      persist(
-        comments.map((x) =>
-          x.id === id ? { ...x, text: n, editedAt: Date.now() } : x,
-        ),
-        threads,
-      )
-      setMenuFor(null)
-    },
-    [pageKey, comments, threads, persist],
-  )
+  const openEdit = useCallback((id: string) => {
+    const c = comments.find((x) => x.id === id)
+    if (!c) return
+    setEditId(id)
+    setEditText(c.text)
+    setEditOpen(true)
+    setMenuFor(null)
+  }, [comments])
+
+  const saveEdit = useCallback(() => {
+    if (!editId) return
+    const c = comments.find((x) => x.id === editId)
+    if (!c) return
+    const n = editText
+    appendCommentAudit(pageKey, {
+      id: newAuditId(),
+      ts: Date.now(),
+      kind: 'comment_edit',
+      threadId: c.threadId,
+      commentId: editId,
+      author: c.author,
+      textBefore: c.text,
+      textAfter: n,
+    })
+    persist(
+      comments.map((x) => (x.id === editId ? { ...x, text: n, editedAt: Date.now() } : x)),
+      threads,
+    )
+    setEditOpen(false)
+    setEditId(null)
+  }, [editId, editText, pageKey, comments, threads, persist])
 
   const softDeleteComment = useCallback(
     (id: string) => {
@@ -437,6 +408,35 @@ export function CommentsDrawer({
     return list
   }, [comments, threads])
 
+  const scopedRoots = useMemo(() => {
+    return roots.filter((r) => {
+      const tm = threads[r.threadId]
+      const a = threadAnchor(tm)
+      if (!a) return false
+      if (scope.mode === 'page') return a === WIKI_PAGE_COMMENT_ANCHOR
+      return a === scope.anchorKey
+    })
+  }, [roots, threads, scope])
+
+  useEffect(() => {
+    if (!open || scope.mode !== 'block') return
+    if (scopedRoots.length === 0) {
+      setViewThreadId(null)
+      return
+    }
+    setViewThreadId((cur) => {
+      if (cur && scopedRoots.some((r) => r.threadId === cur)) return cur
+      return scopedRoots[0].threadId
+    })
+  }, [open, scope.mode, scopedRoots])
+
+  useEffect(() => {
+    if (!open || scope.mode !== 'page') return
+    if (viewThreadId && !scopedRoots.some((r) => r.threadId === viewThreadId)) {
+      setViewThreadId(null)
+    }
+  }, [open, scope.mode, scopedRoots, viewThreadId])
+
   const send = useCallback(() => {
     const a = author.trim()
     const t = text.trim()
@@ -445,14 +445,15 @@ export function CommentsDrawer({
     let threadId: string
     let parentId: string | null
     let openNewThread = false
+    let tmap = threads
 
     if (replyTo) {
       const tm = threads[replyTo.threadId]
       if (tm?.resolved || tm?.deleted) return
       threadId = replyTo.threadId
       parentId = replyTo.parentId
-    } else if (viewThreadId && roots.some((r) => r.threadId === viewThreadId)) {
-      const root = roots.find((r) => r.threadId === viewThreadId)!
+    } else if (viewThreadId && scopedRoots.some((r) => r.threadId === viewThreadId)) {
+      const root = scopedRoots.find((r) => r.threadId === viewThreadId)!
       const tm = threads[viewThreadId]
       if (tm?.resolved || tm?.deleted) return
       threadId = viewThreadId
@@ -461,6 +462,18 @@ export function CommentsDrawer({
       threadId = id
       parentId = null
       openNewThread = true
+    }
+
+    if (openNewThread) {
+      const anchorKey = scope.mode === 'block' ? scope.anchorKey : WIKI_PAGE_COMMENT_ANCHOR
+      const contextExcerpt =
+        scope.mode === 'block' ? scope.excerpt : excerpt.trim() || null
+      tmap = ensureThreadWithMeta(threadId, threads, {
+        anchorKey,
+        contextExcerpt,
+      })
+    } else {
+      tmap = ensureThreadWithMeta(threadId, threads, {})
     }
 
     const row: AdvancedComment = {
@@ -474,8 +487,7 @@ export function CommentsDrawer({
       likes: 0,
       likedBy: [],
     }
-    let tmap = ensureThread(threadId, threads)
-    if (!tmap[threadId]) tmap = ensureThread(threadId, tmap)
+
     persist([...comments, row], tmap)
     try {
       localStorage.setItem(AUTHOR_KEY, a)
@@ -484,19 +496,21 @@ export function CommentsDrawer({
     }
     setText('')
     setReplyTo(null)
-    if (openNewThread) setViewThreadId(id)
+    if (openNewThread) setViewThreadId(threadId)
   }, [
     author,
     text,
     canPostGlobally,
     replyTo,
     viewThreadId,
-    roots,
+    scopedRoots,
     comments,
     threads,
     deviceId,
     persist,
-    ensureThread,
+    ensureThreadWithMeta,
+    scope,
+    excerpt,
   ])
 
   const repliesOf = useCallback(
@@ -508,19 +522,12 @@ export function CommentsDrawer({
   )
 
   const activeThreadId =
-    viewThreadId && roots.some((r) => r.threadId === viewThreadId) ? viewThreadId : null
+    viewThreadId && scopedRoots.some((r) => r.threadId === viewThreadId) ? viewThreadId : null
 
   const activeRoot = useMemo(
-    () => (activeThreadId ? roots.find((r) => r.threadId === activeThreadId) : undefined),
-    [roots, activeThreadId],
+    () => (activeThreadId ? scopedRoots.find((r) => r.threadId === activeThreadId) : undefined),
+    [scopedRoots, activeThreadId],
   )
-
-  useEffect(() => {
-    if (viewThreadId && !roots.some((r) => r.threadId === viewThreadId)) {
-      setViewThreadId(null)
-      setReplyTo(null)
-    }
-  }, [viewThreadId, roots])
 
   const msgsEndRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -532,175 +539,228 @@ export function CommentsDrawer({
     (!!replyTo && !!(threads[replyTo.threadId]?.resolved || threads[replyTo.threadId]?.deleted)) ||
     (!!viewThreadId && !!(threads[viewThreadId]?.resolved || threads[viewThreadId]?.deleted))
 
+  const headerExcerpt = useMemo(() => {
+    if (scope.mode === 'block') return scope.excerpt
+    if (activeThreadId && activeRoot) {
+      const tm = threads[activeThreadId]
+      return threadDisplayName(activeRoot, tm)
+    }
+    return excerpt
+  }, [scope, excerpt, activeThreadId, activeRoot, threads])
+
   if (!open) return null
+
+  const inThreadView = scope.mode === 'page' ? !!activeThreadId : scopedRoots.length > 0
 
   return (
     <>
       <button type="button" className="wiki-drawer-backdrop" aria-label="Закрыть панель" onClick={onClose} />
-      <aside
-        className={`wiki-comments-drawer${activeThreadId ? ' wiki-comments-drawer--thread' : ''}`}
-        aria-label="Комментарии"
-      >
-        <div className="wiki-comments-drawer-head">
-          <h2 className="wiki-comments-drawer-title">Комментарии</h2>
-          <button type="button" className="wiki-drawer-close" onClick={onClose} aria-label="Закрыть">
-            ×
-          </button>
-        </div>
-        {excerpt && !activeThreadId ? <p className="wiki-comments-drawer-excerpt">{excerpt}</p> : null}
-
-        {loadError ? (
-          <div className="wiki-comments-drawer-error">
-            <p>Не удалось загрузить комментарии</p>
-            <button type="button" className="primary" onClick={reload}>
-              Загрузить повторно
-            </button>
+      <aside className="wiki-comments-drawer wiki-comments-drawer--figma" aria-label="Комментарии">
+        {editOpen ? (
+          <div className="wiki-modal-root wiki-comment-edit-overlay" role="dialog" aria-modal="true">
+            <button type="button" className="wiki-modal-backdrop" aria-label="Закрыть" onClick={() => setEditOpen(false)} />
+            <div className="wiki-modal-card">
+              <h2 className="wiki-modal-title">Изменить комментарий</h2>
+              <textarea
+                className="wiki-comments-drawer-ta"
+                rows={4}
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+              />
+              <div className="wiki-modal-actions">
+                <button type="button" className="secondary" onClick={() => setEditOpen(false)}>
+                  Отмена
+                </button>
+                <button type="button" className="primary" onClick={saveEdit}>
+                  Сохранить
+                </button>
+              </div>
+            </div>
           </div>
         ) : null}
 
-        {!loadError && !canPostGlobally ? (
-          <p className="wiki-comments-drawer-note">Комментирование только у создателя страницы.</p>
-        ) : null}
-
-        <div
-          className={`wiki-comments-drawer-list${activeThreadId ? ' wiki-comments-drawer-list--thread' : ''}`}
-        >
-          {activeThreadId && activeRoot ? (
-            <div className="wiki-comments-messenger-wrap">
-              <button
-                type="button"
-                className="wiki-thread-back"
-                onClick={() => {
-                  setViewThreadId(null)
-                  setReplyTo(null)
-                }}
-              >
-                ← К списку веток
+        <div className="wiki-comments-figma wiki-comments-figma--float wiki-comments-figma--drawer">
+          <div className="wiki-comments-figma-head">
+            <div className="wiki-comments-drawer-head-row">
+              <h2 className="wiki-comments-figma-title">Комментарии</h2>
+              <button type="button" className="wiki-drawer-close" onClick={onClose} aria-label="Закрыть">
+                ×
               </button>
-              {(() => {
-                const root = activeRoot
-                const tm = threads[root.threadId] ?? { id: root.threadId, resolved: false }
-                const locked = tm.resolved || !!tm.deleted
-                const reps = repliesOf(root.threadId)
-                const msgs = [root, ...reps].filter((x) => !x.deleted)
-                return (
-                  <section
-                    key={root.threadId}
-                    className={`wiki-thread wiki-thread--messenger${locked ? ' wiki-thread--locked' : ''}${tm.resolved ? ' wiki-thread--resolved' : ''}`}
-                    aria-label={threadDisplayName(root)}
-                  >
-                    <h3 className="wiki-thread-messenger-title">{threadDisplayName(root)}</h3>
-                    <div className="wiki-thread-toolbar">
-                      {tm.resolved ? <span className="wiki-badge wiki-badge--ok">Решено</span> : null}
-                      {!tm.resolved && !tm.deleted ? (
-                        <>
-                          <button
-                            type="button"
-                            className="wiki-thread-action"
-                            onClick={() => resolveThread(root.threadId)}
-                          >
-                            Пометить решённой
-                          </button>
-                          <button
-                            type="button"
-                            className="wiki-thread-action"
-                            onClick={() => deleteThread(root.threadId)}
-                          >
-                            Удалить ветку
-                          </button>
-                        </>
-                      ) : null}
-                    </div>
-                    <div className="wiki-thread-msgs">
-                      {msgs.map((c) => (
-                        <CommentMessengerRow
-                          key={c.id}
-                          c={c}
-                          deviceId={deviceId}
-                          locked={locked}
-                          canPostGlobally={canPostGlobally}
-                          menuFor={menuFor}
-                          setMenuFor={setMenuFor}
-                          likeToggle={likeToggle}
-                          editComment={editComment}
-                          softDeleteComment={softDeleteComment}
-                          onReply={() => {
-                            setReplyTo({
-                              threadId: c.threadId,
-                              parentId: c.id,
-                              label: c.author,
-                            })
-                            setMenuFor(null)
-                          }}
-                        />
-                      ))}
-                      <div ref={msgsEndRef} className="wiki-thread-msgs-end" aria-hidden />
-                    </div>
-                  </section>
-                )
-              })()}
             </div>
-          ) : roots.length === 0 ? (
-            <p className="wiki-comments-drawer-empty">Пока нет веток</p>
-          ) : (
-            <ul className="wiki-thread-name-list">
-              {roots.map((root) => (
-                <li key={root.threadId}>
+            {headerExcerpt ? <p className="wiki-comments-figma-excerpt">{headerExcerpt}</p> : null}
+          </div>
+
+          {loadError ? (
+            <div className="wiki-comments-drawer-error">
+              <p>Не удалось загрузить комментарии</p>
+              <button type="button" className="primary" onClick={reload}>
+                Загрузить повторно
+              </button>
+            </div>
+          ) : null}
+
+          {!loadError && !canPostGlobally ? (
+            <p className="wiki-comments-drawer-note">Комментирование только у создателя страницы.</p>
+          ) : null}
+
+          <div className="wiki-comments-figma-list">
+            {scope.mode === 'page' && !activeThreadId ? (
+              scopedRoots.length === 0 ? (
+                <p className="wiki-comments-figma-empty">Нет комментариев</p>
+              ) : (
+                <ul className="wiki-thread-page-cards">
+                  {scopedRoots.map((root) => {
+                    const tm = threads[root.threadId]
+                    const n = comments.filter((c) => c.threadId === root.threadId && !c.deleted).length
+                    return (
+                      <li key={root.threadId}>
+                        <button
+                          type="button"
+                          className="wiki-thread-page-card"
+                          onClick={() => {
+                            setViewThreadId(root.threadId)
+                            setReplyTo(null)
+                          }}
+                        >
+                          <span className="wiki-thread-page-card-title">{threadDisplayName(root, tm)}</span>
+                          <span className="wiki-thread-page-card-meta">
+                            {n} {n === 1 ? 'сообщение' : n < 5 ? 'сообщения' : 'сообщений'}
+                          </span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )
+            ) : null}
+
+            {inThreadView && activeThreadId && activeRoot ? (
+              <>
+                {scope.mode === 'page' ? (
                   <button
                     type="button"
-                    className="wiki-thread-name-btn"
+                    className="wiki-thread-back wiki-thread-back--figma"
                     onClick={() => {
-                      setViewThreadId(root.threadId)
+                      setViewThreadId(null)
                       setReplyTo(null)
                     }}
                   >
-                    {threadDisplayName(root)}
+                    ← Ко всем обсуждениям
                   </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {canPostGlobally ? (
-          <>
-            <p className="wiki-comments-drawer-author">
-              Как{' '}
-              <input
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-                placeholder="имя"
-                className="wiki-comments-drawer-author-inp"
-              />
-            </p>
-            {replyTo ? (
-              <p className="wiki-comments-drawer-reply-hint">
-                Ответ для <strong>@{replyTo.label}</strong>{' '}
-                <button type="button" className="wiki-linkish" onClick={() => setReplyTo(null)}>
-                  отмена
-                </button>
-              </p>
+                ) : scopedRoots.length > 1 ? (
+                  <button
+                    type="button"
+                    className="wiki-thread-back wiki-thread-back--figma"
+                    onClick={() => setViewThreadId(scopedRoots[0]?.threadId ?? null)}
+                  >
+                    К первой ветке
+                  </button>
+                ) : null}
+                {(() => {
+                  const root = activeRoot
+                  const tm = threads[root.threadId] ?? { id: root.threadId, resolved: false }
+                  const locked = tm.resolved || !!tm.deleted
+                  const reps = repliesOf(root.threadId)
+                  const msgs = [root, ...reps].filter((x) => !x.deleted)
+                  return (
+                    <section className="wiki-thread-figma-thread" aria-label={threadDisplayName(root, tm)}>
+                      <div className="wiki-thread-toolbar wiki-thread-toolbar--figma">
+                        {tm.resolved ? <span className="wiki-badge wiki-badge--ok">Решено</span> : null}
+                        {!tm.resolved && !tm.deleted ? (
+                          <>
+                            <button type="button" className="wiki-thread-action" onClick={() => resolveThread(root.threadId)}>
+                              Пометить решённой
+                            </button>
+                            <button type="button" className="wiki-thread-action" onClick={() => deleteThread(root.threadId)}>
+                              Удалить ветку
+                            </button>
+                          </>
+                        ) : null}
+                      </div>
+                      <ul className="wiki-comments-figma-items">
+                        {msgs.map((c) => (
+                          <FigmaCommentRow
+                            key={c.id}
+                            c={c}
+                            deviceId={deviceId}
+                            locked={locked}
+                            canPostGlobally={canPostGlobally}
+                            menuFor={menuFor}
+                            setMenuFor={setMenuFor}
+                            likeToggle={likeToggle}
+                            editComment={openEdit}
+                            softDeleteComment={softDeleteComment}
+                            onReply={() => {
+                              setReplyTo({
+                                threadId: c.threadId,
+                                parentId: c.id,
+                                label: c.author,
+                              })
+                              setMenuFor(null)
+                            }}
+                          />
+                        ))}
+                      </ul>
+                      <div ref={msgsEndRef} className="wiki-thread-msgs-end" aria-hidden />
+                    </section>
+                  )
+                })()}
+              </>
             ) : null}
-            <div className="wiki-comments-drawer-inputrow">
-              <textarea
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Сообщение… Упоминания: @имя"
-                rows={2}
-                className="wiki-comments-drawer-ta"
-                disabled={currentThreadLocked}
-              />
-              <button
-                type="button"
-                className="primary wiki-comments-drawer-send"
-                onClick={send}
-                disabled={currentThreadLocked}
-              >
-                Отправить
-              </button>
-            </div>
-          </>
-        ) : null}
+
+            {scope.mode === 'block' && scopedRoots.length === 0 ? (
+              <p className="wiki-comments-figma-empty">Нет комментариев</p>
+            ) : null}
+          </div>
+
+          {canPostGlobally ? (
+            <>
+              <p className="wiki-comments-figma-author-hint">
+                Как{' '}
+                <input
+                  value={author}
+                  onChange={(e) => setAuthor(e.target.value)}
+                  placeholder="имя"
+                  className="wiki-comments-figma-author-input"
+                />
+              </p>
+              {replyTo ? (
+                <p className="wiki-comments-drawer-reply-hint">
+                  Ответ для <strong>@{replyTo.label}</strong>{' '}
+                  <button type="button" className="wiki-linkish" onClick={() => setReplyTo(null)}>
+                    отмена
+                  </button>
+                </p>
+              ) : null}
+              <div className="wiki-comments-figma-input-bar">
+                <input
+                  type="text"
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder="Новый комментарий"
+                  className="wiki-comments-figma-field"
+                  disabled={currentThreadLocked}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      send()
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="wiki-comments-figma-send"
+                  title="Отправить"
+                  aria-label="Отправить"
+                  onClick={send}
+                  disabled={currentThreadLocked || !text.trim()}
+                >
+                  ➤
+                </button>
+              </div>
+            </>
+          ) : null}
+        </div>
       </aside>
     </>
   )

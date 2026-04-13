@@ -80,7 +80,16 @@ func (s *TableService) GetTableData(ctx context.Context, dstID, viewID string, p
 func (s *TableService) CreateRecords(ctx context.Context, dstID string, viewID string, records []domain.RecordFields) ([]domain.TableRecord, error) {
 	slog.Debug("Creating records", "dstId", dstID, "viewId", viewID, "count", len(records))
 
-	createdRecords, err := s.tableClient.CreateRecords(ctx, dstID, viewID, records)
+	schema, err := s.tableClient.GetTableFields(ctx, dstID, viewID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get table fields for create: %w", err)
+	}
+	normalized := make([]domain.RecordFields, len(records))
+	for i, r := range records {
+		normalized[i] = domain.RecordFields{Fields: normalizeRecordFieldsForFusion(schema, r.Fields)}
+	}
+
+	createdRecords, err := s.tableClient.CreateRecords(ctx, dstID, viewID, normalized)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create records: %w", err)
 	}
@@ -92,7 +101,19 @@ func (s *TableService) CreateRecords(ctx context.Context, dstID string, viewID s
 func (s *TableService) UpdateRecords(ctx context.Context, dstID string, viewID string, records []domain.RecordUpdate) ([]domain.TableRecord, error) {
 	slog.Debug("Updating records", "dstId", dstID, "viewId", viewID, "count", len(records))
 
-	updatedRecords, err := s.tableClient.UpdateRecords(ctx, dstID, viewID, records)
+	schema, err := s.tableClient.GetTableFields(ctx, dstID, viewID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get table fields for update: %w", err)
+	}
+	normalized := make([]domain.RecordUpdate, len(records))
+	for i, r := range records {
+		normalized[i] = domain.RecordUpdate{
+			RecordID: r.RecordID,
+			Fields:   normalizeRecordFieldsForFusion(schema, r.Fields),
+		}
+	}
+
+	updatedRecords, err := s.tableClient.UpdateRecords(ctx, dstID, viewID, normalized)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update records: %w", err)
 	}

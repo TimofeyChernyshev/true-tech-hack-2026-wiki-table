@@ -1,8 +1,16 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { WikiDocumentEditor } from '../editor/WikiDocumentEditor'
 import { WikiPagesSidebar } from './WikiPagesSidebar'
+import { NewPageModal } from './NewPageModal'
+import {
+  getBacklinksForPage,
+  rebuildBacklinksIndex,
+  WIKI_BACKLINKS_UPDATED,
+  WIKI_NAVIGATE_EVENT,
+  type WikiNavigateDetail,
+} from './wikiBacklinks'
 import {
   addWikiPage,
   loadHeaderSubtitle,
@@ -55,7 +63,33 @@ export function DocumentPage() {
 
   const [pages, setPages] = useState(loadWikiPageIndex)
 
+  const [backlinksRev, setBacklinksRev] = useState(0)
+
+  const [newPageOpen, setNewPageOpen] = useState(false)
+
   const refreshPages = useCallback(() => setPages(loadWikiPageIndex()), [])
+
+  useEffect(() => {
+    rebuildBacklinksIndex()
+    setBacklinksRev((x) => x + 1)
+  }, [])
+
+  useEffect(() => {
+    const onBl = () => setBacklinksRev((x) => x + 1)
+    window.addEventListener(WIKI_BACKLINKS_UPDATED, onBl)
+    return () => window.removeEventListener(WIKI_BACKLINKS_UPDATED, onBl)
+  }, [])
+
+  useEffect(() => {
+    const onNav = (e: Event) => {
+      const d = (e as CustomEvent<WikiNavigateDetail>).detail
+      if (d?.pageKey) {
+        navigate(`/p/${encodeURIComponent(d.pageKey)}`)
+      }
+    }
+    window.addEventListener(WIKI_NAVIGATE_EVENT, onNav as EventListener)
+    return () => window.removeEventListener(WIKI_NAVIGATE_EVENT, onNav as EventListener)
+  }, [navigate])
 
   useEffect(() => {
     if (!pageExists(pageKey)) {
@@ -109,13 +143,21 @@ export function DocumentPage() {
     }
   }, [autoSaveMs])
 
-  const onCreatePage = useCallback(() => {
-    const name = window.prompt('Название новой страницы', 'Новая страница')
-    if (name === null) return
-    const p = addWikiPage(name.trim() || 'Без названия')
-    refreshPages()
-    navigate(`/p/${encodeURIComponent(p.key)}`)
-  }, [navigate, refreshPages])
+  const backlinkKeys = useMemo(() => {
+    void backlinksRev
+    return getBacklinksForPage(pageKey)
+  }, [pageKey, backlinksRev])
+
+  const onCreatePage = useCallback(() => setNewPageOpen(true), [])
+
+  const onConfirmNewPage = useCallback(
+    (title: string) => {
+      const p = addWikiPage(title)
+      refreshPages()
+      navigate(`/p/${encodeURIComponent(p.key)}`)
+    },
+    [navigate, refreshPages],
+  )
 
   if (!pageExists(pageKey)) {
     return null
@@ -125,8 +167,18 @@ export function DocumentPage() {
 
   return (
     <div className="wiki-app">
+      <NewPageModal
+        open={newPageOpen}
+        onClose={() => setNewPageOpen(false)}
+        onCreate={onConfirmNewPage}
+      />
       <div className="wiki-layout-with-pages">
-        <WikiPagesSidebar pages={pages} onCreatePage={onCreatePage} />
+        <WikiPagesSidebar
+          pages={pages}
+          currentPageKey={pageKey}
+          backlinkKeys={backlinkKeys}
+          onCreatePage={onCreatePage}
+        />
         <div className="wiki-layout-main-column">
           <header className="wiki-doc-header">
             <div className="wiki-doc-icon-wrap">

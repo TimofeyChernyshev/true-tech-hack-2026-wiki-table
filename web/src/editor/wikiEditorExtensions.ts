@@ -1,4 +1,4 @@
-import type { AnyExtension } from '@tiptap/core'
+import type { AnyExtension, ResizableNodeViewDirection } from '@tiptap/core'
 
 import StarterKit from '@tiptap/starter-kit'
 
@@ -16,8 +16,6 @@ import { Gapcursor } from '@tiptap/extension-gapcursor'
 
 import Link from '@tiptap/extension-link'
 
-import Image from '@tiptap/extension-image'
-
 import { createLowlight, common } from 'lowlight'
 
 import { SlashCommand } from './slashCommand'
@@ -25,6 +23,21 @@ import { SlashCommand } from './slashCommand'
 import { MwsTable, MwsTableRow } from './mwsTable'
 
 import { MwsWorkbenchPaste } from './mwsWorkbenchPaste'
+
+import { WikiCommentAnchor } from './wikiCommentAnchor'
+
+import { WikiImage } from './wikiImageExtension'
+
+const imageResizeDirections: ResizableNodeViewDirection[] = [
+  'top',
+  'right',
+  'bottom',
+  'left',
+  'top-left',
+  'top-right',
+  'bottom-left',
+  'bottom-right',
+]
 
 const lowlight = createLowlight(common)
 
@@ -46,6 +59,8 @@ export const wikiBaseExtensions: AnyExtension[] = [
 
   }),
 
+  WikiCommentAnchor,
+
   CodeBlockLowlight.configure({
 
     lowlight,
@@ -66,7 +81,7 @@ export const wikiBaseExtensions: AnyExtension[] = [
 
   Link.configure({
 
-    openOnClick: true,
+    openOnClick: false,
 
     HTMLAttributes: {
 
@@ -78,7 +93,9 @@ export const wikiBaseExtensions: AnyExtension[] = [
 
   }),
 
-  Image.configure({
+  WikiImage.configure({
+
+    inline: true,
 
     allowBase64: true,
 
@@ -86,11 +103,13 @@ export const wikiBaseExtensions: AnyExtension[] = [
 
       enabled: true,
 
+      directions: imageResizeDirections,
+
       minWidth: 72,
 
       minHeight: 48,
 
-      alwaysPreserveAspectRatio: true,
+      alwaysPreserveAspectRatio: false,
 
     },
 

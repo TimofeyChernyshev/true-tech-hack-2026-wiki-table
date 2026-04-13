@@ -2,10 +2,39 @@ package mwsclient
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 	"true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/table/domain"
 )
+
+// decodePostCreateRecordsData обрабатывает ответ POST /datasheets/{dstId}/records.
+// Сгенерированный ParsePostFusionV1DatasheetsDstIdRecordsResponse заполняет JSON201 только при статусе 201;
+// часть окружений MWS отвечает 200 OK с тем же телом — тогда JSON201 остаётся nil.
+func decodePostCreateRecordsData(resp *PostFusionV1DatasheetsDstIdRecordsResponse) (*RecordsData, error) {
+	if resp.JSON201 != nil && resp.JSON201.Data != nil {
+		return resp.JSON201.Data, nil
+	}
+	code := resp.StatusCode()
+	if code != http.StatusOK && code != http.StatusCreated {
+		return nil, fmt.Errorf("unexpected status %d: %s", code, string(resp.Body))
+	}
+	if len(resp.Body) == 0 {
+		return nil, fmt.Errorf("empty body (status %d)", code)
+	}
+	var envelope CreateRecordsResponse
+	if err := json.Unmarshal(resp.Body, &envelope); err != nil {
+		return nil, fmt.Errorf("json decode: %w; body=%s", err, string(resp.Body))
+	}
+	if envelope.Data == nil {
+		if envelope.Message != nil && (envelope.Success == nil || (envelope.Success != nil && !*envelope.Success)) {
+			return nil, fmt.Errorf("fusion: %s", *envelope.Message)
+		}
+		return nil, fmt.Errorf("response data is nil (status %d): %s", code, string(resp.Body))
+	}
+	return envelope.Data, nil
+}
 
 // GetTableRecords получает записи таблицы
 func (c *ClientWrapper) GetTableRecords(ctx context.Context, dstID, viewID string, pageNum, pageSize int) ([]domain.TableRecord, int, error) {
@@ -105,11 +134,12 @@ func (c *ClientWrapper) CreateRecords(ctx context.Context, dstID, viewID string,
 		return nil, fmt.Errorf("failed to create records: %w", err)
 	}
 
-	if resp.JSON201 == nil || resp.JSON201.Data == nil {
-		return nil, fmt.Errorf("empty response data")
+	data, err := decodePostCreateRecordsData(resp)
+	if err != nil {
+		return nil, err
 	}
 
-	return c.convertToTableRecords(resp.JSON201.Data.Records), nil
+	return c.convertToTableRecords(data.Records), nil
 }
 
 func (c *ClientWrapper) UpdateRecords(ctx context.Context, dstID, viewID string, records []domain.RecordUpdate) ([]domain.TableRecord, error) {
