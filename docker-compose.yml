@@ -115,6 +115,32 @@ services:
       retries: 3
       start_period: 10s
 
+  gpt:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.gpt
+    container_name: wiki-gpt
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${GPT_PORT:-8083}:${GPT_PORT:-8083}"
+    environment:
+      - GPT_PORT=${GPT_PORT:-8083}
+      - MWS_GPT_BASE_URL=${MWS_GPT_BASE_URL}
+      - MWS_GPT_API_KEY=${MWS_GPT_API_KEY}
+      - MWS_GPT_REQUEST_TIMEOUT=${MWS_GPT_REQUEST_TIMEOUT:-60s}
+      - ALLOW_ORIGINS=${ALLOW_ORIGINS}
+      - HTTP_READ_TIMEOUT=${HTTP_READ_TIMEOUT:-30s}
+    networks:
+      - wiki-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${GPT_PORT:-8083}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
   web:
     build:
       context: ./web
