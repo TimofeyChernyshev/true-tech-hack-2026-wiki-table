@@ -1,0 +1,468 @@
+openapi: 3.0.0
+info:
+  title: MWS GPT Service API
+  description: |
+    Сервис для взаимодействия с MWS GPT (LLM моделями).
+    Поддерживает Chat Completion, Completion и Embeddings.
+  version: 1.0.0
+
+servers:
+  - url: /api/v1
+    description: MWS GPT Service
+
+paths:
+  /models:
+    get:
+      summary: Получить список доступных моделей
+      tags:
+        - models
+      responses:
+        '200':
+          description: Список моделей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /chat/completions:
+    post:
+      summary: Chat Completion - диалоговое взаимодействие
+      description: |
+        Используется для диалогового взаимодействия с учетом контекста.
+        Поддерживает многозадачность.
+      tags:
+        - chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatCompletionRequest'
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatCompletionResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /completions:
+    post:
+      summary: Completion - генерация и завершение текста
+      description: |
+        Используется для генерации текста и завершения предложений.
+      tags:
+        - completion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompletionRequest'
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompletionResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /embeddings:
+    post:
+      summary: Embeddings - векторное представление текста
+      description: |
+        Используется для:
+        - Классификации текста
+        - Семантического представления текста
+        - Поиска и сравнения текста
+      tags:
+        - embeddings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmbeddingsRequest'
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmbeddingsResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    
+    ModelsResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Model'
+
+    Model:
+      type: object
+      required:
+        - id
+        - object
+        - created
+        - owned_by
+      properties:
+        id:
+          type: string
+          description: Идентификатор модели
+          example: "mws-gpt-alpha"
+        object:
+          type: string
+          enum: ["model"]
+          example: "model"
+        created:
+          type: integer
+          format: int64
+          description: Unix timestamp создания
+          example: 1677610602
+        owned_by:
+          type: string
+          description: Владелец модели
+          example: "openai"
+
+    ChatCompletionRequest:
+      type: object
+      required:
+        - model
+        - messages
+      properties:
+        model:
+          type: string
+          description: Модель для обработки текста
+          example: "mts-anya"
+        messages:
+          type: array
+          description: Массив сообщений
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        temperature:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 2.0
+          default: 1.0
+          description: Параметр случайности вывода (0.0 - детерминированный, 1.0 - более случайный)
+          example: 0.6
+        max_tokens:
+          type: integer
+          description: Максимальное количество возвращаемых токенов
+          example: 1000
+        n:
+          type: integer
+          default: 1
+          description: Количество вариантов ответов
+          example: 1
+        presence_penalty:
+          type: number
+          format: float
+          minimum: -2.0
+          maximum: 2.0
+          default: 0.0
+          description: Штраф за повторение токенов из истории
+        frequency_penalty:
+          type: number
+          format: float
+          minimum: -2.0
+          maximum: 2.0
+          default: 0.0
+          description: Штраф за использование частых токенов
+
+    ChatMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum: ["system", "user", "assistant"]
+          description: Роль отправителя
+          example: "user"
+        content:
+          type: string
+          description: Содержание сообщения
+          example: "Привет, как дела?"
+
+    ChatCompletionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "chatcmpl-f6d4b004e9ba4e95b2cede3ca82040b4"
+        object:
+          type: string
+          enum: ["chat.completion"]
+          example: "chat.completion"
+        created:
+          type: integer
+          format: int64
+          example: 1739133562
+        model:
+          type: string
+          example: "mts_anya"
+        choices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatChoice'
+        usage:
+          $ref: '#/components/schemas/Usage'
+
+    ChatChoice:
+      type: object
+      properties:
+        index:
+          type: integer
+          example: 0
+        message:
+          $ref: '#/components/schemas/ChatMessage'
+        finish_reason:
+          type: string
+          enum: ["stop", "length", "content_filter"]
+          example: "stop"
+
+    CompletionRequest:
+      type: object
+      required:
+        - model
+        - prompt
+      properties:
+        model:
+          type: string
+          description: Модель для генерации
+          example: "mts-anya"
+        prompt:
+          type: string
+          description: Текст запроса
+          example: "Что такое искусственный интеллект?"
+        max_tokens:
+          type: integer
+          default: 16
+          description: Максимальное количество возвращаемых токенов
+          example: 150
+        temperature:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 2.0
+          default: 1.0
+          example: 0.6
+        top_p:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          default: 1.0
+          description: Альтернативный способ контроля случайности
+        presence_penalty:
+          type: number
+          format: float
+          minimum: -2.0
+          maximum: 2.0
+          default: 0.0
+        frequency_penalty:
+          type: number
+          format: float
+          minimum: -2.0
+          maximum: 2.0
+          default: 0.0
+        stop:
+          type: array
+          items:
+            type: string
+          description: Условия остановки генерации
+          example: ["\n"]
+
+    CompletionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "cmpl-d7f6336cd211498192b3cd78c7f7d87e"
+        object:
+          type: string
+          enum: ["text_completion"]
+          example: "text_completion"
+        created:
+          type: integer
+          format: int64
+          example: 1739134432
+        model:
+          type: string
+          example: "mts_anya"
+        choices:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompletionChoice'
+        usage:
+          $ref: '#/components/schemas/Usage'
+
+    CompletionChoice:
+      type: object
+      properties:
+        index:
+          type: integer
+          example: 0
+        text:
+          type: string
+          description: Сгенерированный текст
+          example: "ИСКУССТВЕННЫЙ ИНТЕЛЛЕКТ — это..."
+        finish_reason:
+          type: string
+          enum: ["stop", "length"]
+          example: "length"
+
+    EmbeddingsRequest:
+      type: object
+      required:
+        - model
+        - input
+      properties:
+        model:
+          type: string
+          description: Модель для эмбеддинга
+          example: "bge-m3"
+        input:
+          type: string
+          description: Текст для преобразования в эмбеддинг
+          example: "как у тебя дела?"
+
+    EmbeddingsResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          enum: ["list"]
+          example: "list"
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmbeddingData'
+        model:
+          type: string
+          example: "bge-m3"
+        usage:
+          $ref: '#/components/schemas/Usage'
+
+    EmbeddingData:
+      type: object
+      properties:
+        object:
+          type: string
+          enum: ["embedding"]
+          example: "embedding"
+        index:
+          type: integer
+          example: 0
+        embedding:
+          type: array
+          items:
+            type: number
+            format: float
+          description: Векторное представление текста
+
+    Usage:
+      type: object
+      properties:
+        prompt_tokens:
+          type: integer
+          description: Количество токенов в запросе
+          example: 51
+        completion_tokens:
+          type: integer
+          description: Количество токенов в ответе
+          example: 28
+        total_tokens:
+          type: integer
+          description: Общее количество токенов
+          example: 79
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            type:
+              type: string
+            code:
+              type: string
