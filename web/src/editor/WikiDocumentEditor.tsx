@@ -67,6 +67,8 @@ import { MwsTableInsertModal } from './MwsTableInsertModal'
 
 import { MwsTableToolbar } from './MwsTableToolbar'
 
+import { useMwsTableWsSync } from './useMwsTableWsSync'
+
 import { ensureCommentAnchorAtPosition } from './wikiCommentAnchor'
 
 import 'tippy.js/dist/tippy.css'
@@ -340,6 +342,8 @@ function WikiDocumentEditorLoaded({
     },
 
   })
+
+  useMwsTableWsSync(editor, editorRef)
 
   useEffect(() => {
 

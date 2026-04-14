@@ -152,6 +152,8 @@ services:
     depends_on:
       table:
         condition: service_healthy
+      page:
+        condition: service_healthy
     networks:
       - wiki-network
 
