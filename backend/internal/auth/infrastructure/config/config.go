@@ -11,7 +11,7 @@ import (
 type Config struct {
 	JWTAccessSecret  string        `env:"JWT_ACCESS_SECRET,required"`
 	JWTRefreshSecret string        `env:"JWT_REFRESH_SECRET,required"`
-	JWTAccessTTL     time.Duration `env:"JWT_ACEESS_TTL,required"`
+	JWTAccessTTL     time.Duration `env:"JWT_ACCESS_TTL,required"`
 	JWTRefreshTTL    time.Duration `env:"JWT_REFRESH_TTL,required"`
 
 	AllowOrigins    []string      `env:"ALLOW_ORIGINS"`
@@ -23,7 +23,7 @@ type Config struct {
 	DBHost     string `env:"DB_HOST,required"`
 	DBPort     string `env:"DB_PORT,required"`
 	DBName     string `env:"DB_NAME,required"`
-	SSLMode    string `env:"SSLMODE,required"`
+	SSLMode    string `env:"SSLMODE" envDefault:"disable"`
 }
 
 func Load() (*Config, error) {
