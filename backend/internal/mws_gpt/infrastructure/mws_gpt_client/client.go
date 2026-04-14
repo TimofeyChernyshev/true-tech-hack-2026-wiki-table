@@ -49,22 +49,8 @@ func NewClientWrapper(baseURL, APIKey string, requestTimeout time.Duration) (*Cl
 	}, nil
 }
 
-// Ping проверяет доступность API
-func (c *ClientWrapper) Ping(ctx context.Context) error {
-	resp, err := c.genClient.GetModelsWithResponse(ctx)
-	if err != nil {
-		return fmt.Errorf("ping failed: %w", err)
-	}
-
-	if resp.StatusCode() == 200 || resp.StatusCode() == 401 {
-		return nil
-	}
-
-	return fmt.Errorf("unexpected status: %d", resp.StatusCode())
-}
-
 // GetModels возвращает список доступных моделей
-func (c *ClientWrapper) GetModels(ctx context.Context) ([]Model, error) {
+func (c *ClientWrapper) GetModels(ctx context.Context) ([]domain.Model, error) {
 	resp, err := c.genClient.GetModelsWithResponse(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get models: %w", err)
@@ -78,11 +64,21 @@ func (c *ClientWrapper) GetModels(ctx context.Context) ([]Model, error) {
 		return nil, fmt.Errorf("empty response")
 	}
 
-	return resp.JSON200.Data, nil
+	models := make([]domain.Model, len(resp.JSON200.Data))
+	for i, m := range resp.JSON200.Data {
+		models[i] = domain.Model{
+			Created: m.Created,
+			Id:      m.Id,
+			Object:  domain.ModelObject(m.Object),
+			OwnedBy: m.OwnedBy,
+		}
+	}
+
+	return models, nil
 }
 
 // Chat отправляет сообщение в чат
-func (c *ClientWrapper) Chat(ctx context.Context, req domain.ChatRequest) (*ChatCompletionResponse, error) {
+func (c *ClientWrapper) Chat(ctx context.Context, req domain.ChatRequest) (*domain.ChatResponse, error) {
 	body := ChatCompletionRequest{
 		Model:       req.Model,
 		Messages:    make([]ChatMessage, len(req.Messages)),
@@ -110,32 +106,41 @@ func (c *ClientWrapper) Chat(ctx context.Context, req domain.ChatRequest) (*Chat
 		return nil, fmt.Errorf("empty response")
 	}
 
-	return resp.JSON200, nil
-}
+	if resp.JSON200.Choices == nil || len(*resp.JSON200.Choices) == 0 {
+		return nil, fmt.Errorf("no choices in response")
+	}
 
-// GenerateRequest параметры для генерации текста
-type GenerateRequest struct {
-	Model            string   `json:"model"`
-	Prompt           string   `json:"prompt"`
-	MaxTokens        *int     `json:"max_tokens,omitempty"`
-	Temperature      *float32 `json:"temperature,omitempty"`
-	TopP             *float32 `json:"top_p,omitempty"`
-	Stop             []string `json:"stop,omitempty"`
-	FrequencyPenalty *float32 `json:"frequency_penalty,omitempty"`
-	PresencePenalty  *float32 `json:"presence_penalty,omitempty"`
+	choice := (*resp.JSON200.Choices)[0]
+	if choice.Message == nil {
+		return nil, fmt.Errorf("no message in choice")
+	}
+
+	return &domain.ChatResponse{
+		ID: *resp.JSON200.Id,
+		Message: domain.Message{
+			Role:    domain.MessageRole(choice.Message.Role),
+			Content: choice.Message.Content,
+		},
+		Model: *resp.JSON200.Model,
+		Usage: domain.TokenUsage{
+			CompletionTokens: *resp.JSON200.Usage.CompletionTokens,
+			PromptTokens:     *resp.JSON200.Usage.PromptTokens,
+			TotalTokens:      *resp.JSON200.Usage.TotalTokens,
+		},
+	}, nil
 }
 
 // Generate генерирует текст
-func (c *ClientWrapper) Generate(ctx context.Context, req GenerateRequest) (*CompletionResponse, error) {
+func (c *ClientWrapper) Generate(ctx context.Context, req domain.GenerateRequest) (*domain.GenerateResponse, error) {
 	body := CompletionRequest{
 		Model:            req.Model,
 		Prompt:           req.Prompt,
 		MaxTokens:        req.MaxTokens,
 		Temperature:      req.Temperature,
-		TopP:             req.TopP,
-		Stop:             &req.Stop,
-		FrequencyPenalty: req.FrequencyPenalty,
-		PresencePenalty:  req.PresencePenalty,
+		Stop:             &req.StopSequences,
+		TopP:             nil,
+		FrequencyPenalty: nil,
+		PresencePenalty:  nil,
 	}
 
 	resp, err := c.genClient.PostCompletionsWithResponse(ctx, body)
@@ -151,30 +156,70 @@ func (c *ClientWrapper) Generate(ctx context.Context, req GenerateRequest) (*Com
 		return nil, fmt.Errorf("empty response")
 	}
 
-	return resp.JSON200, nil
+	if resp.JSON200.Choices == nil || len(*resp.JSON200.Choices) == 0 {
+		return nil, fmt.Errorf("no choices in response")
+	}
+
+	choice := (*resp.JSON200.Choices)[0]
+	if choice.Text == nil {
+		return nil, fmt.Errorf("no text in choice")
+	}
+
+	return &domain.GenerateResponse{
+		ID:    *resp.JSON200.Id,
+		Text:  *choice.Text,
+		Model: *resp.JSON200.Model,
+		Usage: domain.TokenUsage{
+			CompletionTokens: *resp.JSON200.Usage.CompletionTokens,
+			PromptTokens:     *resp.JSON200.Usage.PromptTokens,
+			TotalTokens:      *resp.JSON200.Usage.TotalTokens,
+		},
+	}, nil
 }
 
 // GetEmbeddings получает векторное представление текста
-func (c *ClientWrapper) GetEmbeddings(ctx context.Context, model, input string) (*EmbeddingsResponse, error) {
-	body := EmbeddingsRequest{
-		Model: model,
-		Input: input,
+func (c *ClientWrapper) GetEmbeddings(ctx context.Context, req domain.EmbeddingsRequest) (*domain.EmbeddingsResponse, error) {
+	embeddings := make([][]float32, len(req.Input))
+	var totalTokens int
+
+	for i, input := range req.Input {
+		body := EmbeddingsRequest{
+			Model: req.Model,
+			Input: input,
+		}
+
+		resp, err := c.genClient.PostEmbeddingsWithResponse(ctx, body)
+		if err != nil {
+			return nil, fmt.Errorf("embeddings failed for input %d: %w", i, err)
+		}
+
+		if resp.StatusCode() != 200 {
+			return nil, c.parseErrorResponse(resp.Body, resp.StatusCode())
+		}
+
+		if resp.JSON200 == nil {
+			return nil, fmt.Errorf("empty response for input %d", i)
+		}
+
+		if resp.JSON200.Data != nil && len(*resp.JSON200.Data) > 0 {
+			data := (*resp.JSON200.Data)[0]
+			if data.Embedding != nil {
+				embeddings[i] = *data.Embedding
+			}
+		}
+
+		if resp.JSON200.Usage != nil && resp.JSON200.Usage.TotalTokens != nil {
+			totalTokens += *resp.JSON200.Usage.TotalTokens
+		}
 	}
 
-	resp, err := c.genClient.PostEmbeddingsWithResponse(ctx, body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get embeddings: %w", err)
-	}
-
-	if resp.StatusCode() != 200 {
-		return nil, c.parseErrorResponse(resp.Body, resp.StatusCode())
-	}
-
-	if resp.JSON200 == nil {
-		return nil, fmt.Errorf("empty response")
-	}
-
-	return resp.JSON200, nil
+	return &domain.EmbeddingsResponse{
+		Embeddings: embeddings,
+		Model:      req.Model,
+		Usage: domain.TokenUsage{
+			TotalTokens: totalTokens,
+		},
+	}, nil
 }
 
 // parseErrorResponse парсит ответ с ошибкой
