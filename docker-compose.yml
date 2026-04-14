@@ -97,7 +97,7 @@ services:
       - "${PAGE_PORT:-8081}:${PAGE_PORT:-8081}"
     environment:
       - PAGE_PORT=${PAGE_PORT:-8081}
-      - TABLE_SERVICE_BASE_URL=http://table:${TABLE_PORT}
+      - TABLE_SERVICE_BASE_URL=http://table:${TABLE_PORT}/api/v1
       - TABLE_SERVICE_REQUEST_TIMEOUT=30s
     volumes:
       - wiki-pages:/app/data/pages
