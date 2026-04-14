@@ -21,7 +21,7 @@ type GPTService interface {
 
 	GetEmbeddings(ctx context.Context, req domain.EmbeddingsRequest) (*domain.EmbeddingsResponse, error)
 
-	GetModels(ctx context.Context) ([]ModelInfo, error)
+	GetModels(ctx context.Context) ([]domain.Model, error)
 }
 
 type Server struct {

@@ -227,20 +227,6 @@ components:
           type: string
           description: Провайдер модели
           example: "MWS"
-        description:
-          type: string
-          description: Описание модели
-          example: "Русскоязычная модель для диалогов"
-        contextLength:
-          type: integer
-          description: Максимальная длина контекста в токенах
-          example: 8192
-        features:
-          type: array
-          items:
-            type: string
-            enum: ["chat", "completion", "embeddings", "streaming"]
-          description: Поддерживаемые функции
 
     ChatRequest:
       type: object

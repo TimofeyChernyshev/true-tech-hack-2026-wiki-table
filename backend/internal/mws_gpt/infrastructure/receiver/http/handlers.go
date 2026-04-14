@@ -241,9 +241,18 @@ func (s *Server) GetGptModels(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, ModelsResponse{
-		Models: models,
-	})
+	modelsResponse := ModelsResponse{
+		make([]ModelInfo, len(models)),
+	}
+	for i, m := range models {
+		modelsResponse.Models[i] = ModelInfo{
+			Id:       m.Id,
+			Name:     m.Id,
+			Provider: m.OwnedBy,
+		}
+	}
+
+	c.JSON(http.StatusOK, modelsResponse)
 }
 
 func (s *Server) badRequest(c *gin.Context, message, details string) {
