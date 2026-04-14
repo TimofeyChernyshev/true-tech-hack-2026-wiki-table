@@ -22,8 +22,8 @@ services:
 
   auth:
     build:
-      context: ./auth-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile.auth
     container_name: wiki-auth
     restart: unless-stopped
     env_file:
@@ -42,7 +42,7 @@ services:
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
       - JWT_ACCESS_TTL=${JWT_ACCESS_TTL:-15m}
       - JWT_REFRESH_TTL=${JWT_REFRESH_TTL:-168h}
-      - HTTP_READ_TIMEOUT=${HTTP_READ_TIMEOUT:15s}
+      - HTTP_READ_TIMEOUT=${HTTP_READ_TIMEOUT:-15s}
       - ALLOW_ORIGINS=${ALLOW_ORIGINS}
     depends_on:
       postgres:
@@ -58,7 +58,7 @@ services:
 
   table:
     build:
-      context: ./table
+      context: ./backend
       dockerfile: Dockerfile.table
     container_name: wiki-table
     restart: unless-stopped
@@ -72,7 +72,7 @@ services:
       - MWS_TABLES_REQUEST_TIMEOUT=${MWS_TABLES_REQUEST_TIMEOUT:-60s}
       - ALLOW_ORIGINS=${ALLOW_ORIGINS:-http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000}
       - TABLE_PORT=${TABLE_PORT:-8080}
-      - HTTP_READ_TIMEOUT=${BACKEND_READ_TIMEOUT:-15s}
+      - HTTP_READ_TIMEOUT=${HTTP_READ_TIMEOUT:-15s}
       - WIKI_DATA_DIR=${WIKI_DATA_DIR:-/app/data/wiki}
     volumes:
       - wiki-pages:/app/data/wiki
@@ -87,7 +87,7 @@ services:
 
   page:
     build:
-      context: ./wiki-page
+      context: ./backend
       dockerfile: Dockerfile.wiki-page
     container_name: wiki-page
     restart: unless-stopped
@@ -124,12 +124,13 @@ services:
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     depends_on:
-      backend:
+      table:
         condition: service_healthy
     networks:
       - wiki-network
 
 volumes:
+  postgres-data:
   wiki-pages:
 
 networks:
