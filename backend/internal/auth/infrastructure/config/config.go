@@ -9,15 +9,21 @@ import (
 )
 
 type Config struct {
-	MWSRequestTimeout time.Duration `env:"MWS_TABLES_REQUEST_TIMEOUT" envDefault:"60s"`
-	JWTAccessSecret   string        `env:"JWT_ACCESS_SECRET,required"`
-	JWTRefreshSecret  string        `env:"JWT_REFRESH_SECRET,required"`
-	JWTAccessTTL      time.Duration `env:"JWT_ACEESS_TTL,required"`
-	JWTRefreshTTL     time.Duration `env:"JWT_REFRESH_TTL,required"`
+	JWTAccessSecret  string        `env:"JWT_ACCESS_SECRET,required"`
+	JWTRefreshSecret string        `env:"JWT_REFRESH_SECRET,required"`
+	JWTAccessTTL     time.Duration `env:"JWT_ACEESS_TTL,required"`
+	JWTRefreshTTL    time.Duration `env:"JWT_REFRESH_TTL,required"`
 
 	AllowOrigins    []string      `env:"ALLOW_ORIGINS"`
-	HTTPPort        string        `env:"HTTP_PORT" envDefault:"8082"`
+	HTTPPort        string        `env:"AUTH_PORT" envDefault:"8082"`
 	HTTPReadTimeout time.Duration `env:"HTTP_READ_TIMEOUT" envDefault:"15s"`
+
+	DBUser     string `env:"DB_USER,required"`
+	DBPassword string `env:"DB_PASSWORD,required"`
+	DBHost     string `env:"DB_HOST,required"`
+	DBPort     string `env:"DB_PORT,required"`
+	DBName     string `env:"DB_NAME,required"`
+	SSLMode    string `env:"SSLMODE,required"`
 }
 
 func Load() (*Config, error) {
