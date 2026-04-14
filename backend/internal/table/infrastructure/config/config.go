@@ -13,7 +13,7 @@ type Config struct {
 	MWSAPIKey         string        `env:"MWS_API_KEY,required"`
 	MWSRequestTimeout time.Duration `env:"MWS_TABLES_REQUEST_TIMEOUT" envDefault:"60s"`
 	AllowOrigins      []string      `env:"ALLOW_ORIGINS"`
-	HTTPPort          string        `env:"HTTP_PORT" envDefault:"8080"`
+	HTTPPort          string        `env:"TABLE_PORT" envDefault:"8080"`
 	HTTPReadTimeout   time.Duration `env:"HTTP_READ_TIMEOUT" envDefault:"15s"`
 }
 
