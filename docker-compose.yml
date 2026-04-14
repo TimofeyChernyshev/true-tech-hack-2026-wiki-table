@@ -1,14 +1,71 @@
 services:
-  backend:
+  postgres:
+    image: postgres:16-alpine
+    container_name: wiki-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-wiki}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./auth-service/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - wiki-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth:
     build:
-      context: ./backend
-      dockerfile: Dockerfile.table
-    container_name: wiki-backend
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: wiki-auth
     restart: unless-stopped
     env_file:
       - .env
     ports:
-      - "${BACKEND_PORT:-8080}:${HTTP_PORT:-8080}"
+      - "${AUTH_PORT:-8082}:${AUTH_PORT:-8082}"
+    environment:
+      - AUTH_PORT=${AUTH_PORT:-8082}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME:-wiki}
+      - SSLMODE=${SSLMODE:-disable}
+      - JWT_ACCESS_SECRET=${JWT_ACCESS_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - JWT_ACCESS_TTL=${JWT_ACCESS_TTL:-15m}
+      - JWT_REFRESH_TTL=${JWT_REFRESH_TTL:-168h}
+      - HTTP_READ_TIMEOUT=${HTTP_READ_TIMEOUT:15s}
+      - ALLOW_ORIGINS=${ALLOW_ORIGINS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - wiki-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${AUTH_PORT:-8082}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  table:
+    build:
+      context: ./table
+      dockerfile: Dockerfile.table
+    container_name: wiki-table
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${TABLE_PORT:-8080}:${TABLE_PORT:-8080}"
     environment:
       - MWS_TABLES_BASE_URL=${MWS_TABLES_BASE_URL}
       - MWS_API_KEY=${MWS_API_KEY}
