@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -11,7 +13,12 @@ import (
 	"true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/auth/infrastructure/config"
 	"true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/auth/infrastructure/jwt"
 	authhttp "true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/auth/infrastructure/receiver/http"
-	"true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/auth/infrastructure/repository"
+	postgresrepository "true-tech-hack2026-wikilive/team-8d29b6bb/task-repo/internal/auth/infrastructure/repository/postgres"
+
+	"github.com/golang-migrate/migrate/v4"
+
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func main() {
@@ -23,9 +30,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	userRepo := repository.NewInMemoryUserRepository()
+	userRepo, err := postgresrepository.NewPostgresUserRepository(fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName, cfg.SSLMode,
+	))
+	if err != nil {
+		slog.Error("cannot start postgres", "error", err)
+		os.Exit(1)
+	}
 
-	// Token менеджер
 	tokenMgr := jwt.NewTokenManager(
 		cfg.JWTAccessSecret,
 		cfg.JWTRefreshSecret,
@@ -33,10 +46,8 @@ func main() {
 		cfg.JWTRefreshTTL,
 	)
 
-	// Сервис
 	authService := application.NewAuthService(userRepo, tokenMgr)
 
-	// HTTP сервер
 	server := authhttp.NewServer(authService, cfg.AllowOrigins, cfg.HTTPPort, cfg.HTTPReadTimeout, cfg.JWTAccessTTL, cfg.JWTRefreshTTL)
 
 	go func() {
@@ -65,4 +76,28 @@ func setLogger() {
 	})
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
+}
+
+func runMigrations(cfg *config.Config) error {
+	connString := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName, cfg.SSLMode,
+	)
+
+	m, err := migrate.New(
+		"file://migrations",
+		connString,
+	)
+	if err != nil {
+		return fmt.Errorf("create migrator: %w", err)
+	}
+	defer func() {
+		_, _ = m.Close()
+	}()
+
+	if err = m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		return fmt.Errorf("run migrations: %w", err)
+	}
+
+	return nil
 }
