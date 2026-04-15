@@ -12,6 +12,7 @@ type Props = {
   onOpenCommentHistory?: () => void
   onOpenCommentAccess?: () => void
   onOpenTimeMachine?: () => void
+  onOpenAiHints?: () => void
 }
 
 function TbBtn({
@@ -20,12 +21,14 @@ function TbBtn({
   disabled,
   title,
   children,
+  testId,
 }: {
   onClick: () => void
   active?: boolean
   disabled?: boolean
   title: string
   children: ReactNode
+  testId?: string
 }) {
   return (
     <button
@@ -35,6 +38,7 @@ function TbBtn({
       title={title}
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
+      data-testid={testId}
     >
       {children}
     </button>
@@ -49,6 +53,7 @@ export function WikiToolbar({
   onOpenCommentHistory,
   onOpenCommentAccess,
   onOpenTimeMachine,
+  onOpenAiHints,
 }: Props) {
   const ed = editor
 
@@ -89,6 +94,7 @@ export function WikiToolbar({
             if (!ed) return
             ed.chain().focus().undo().run()
           }}
+          data-testid="wikiToolbar-undoButton"
         >
           ↶
         </button>
@@ -103,6 +109,7 @@ export function WikiToolbar({
             if (!ed) return
             ed.chain().focus().redo().run()
           }}
+          data-testid="wikiToolbar-redoButton"
         >
           ↷
         </button>
@@ -115,6 +122,7 @@ export function WikiToolbar({
             active={ed?.isActive('bold')}
             disabled={!ed || !ed.can().toggleBold()}
             onClick={() => ed?.chain().focus().toggleBold().run()}
+            testId="wikiToolbar-boldButton"
           >
             B
           </TbBtn>
@@ -261,6 +269,7 @@ export function WikiToolbar({
             title="Таблица из MWS по ссылке workbench (tables.mws.ru)"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onOpenMwsTable?.()}
+            data-testid="wikiToolbar-mwsTableButton"
           >
             MWS
           </button>
@@ -278,6 +287,7 @@ export function WikiToolbar({
             title="Изображение (файл PNG/JPG/GIF)"
             disabled={!ed || !onInsertImageFile}
             onClick={() => onInsertImageFile?.()}
+            testId="wikiToolbar-imageButton"
           >
             🖼
           </TbBtn>
@@ -292,6 +302,7 @@ export function WikiToolbar({
             title="Комментарии"
             onMouseDown={(e) => e.preventDefault()}
             onClick={onOpenComments}
+            data-testid="wikiToolbar-commentsButton"
           >
             💬
           </button>
@@ -303,6 +314,7 @@ export function WikiToolbar({
             title="История комментариев"
             onMouseDown={(e) => e.preventDefault()}
             onClick={onOpenCommentHistory}
+            data-testid="wikiToolbar-commentHistoryButton"
           >
             📜
           </button>
@@ -314,6 +326,7 @@ export function WikiToolbar({
             title="Доступ к комментариям"
             onMouseDown={(e) => e.preventDefault()}
             onClick={onOpenCommentAccess}
+            data-testid="wikiToolbar-commentAccessButton"
           >
             🔐
           </button>
@@ -325,8 +338,21 @@ export function WikiToolbar({
             title="Машина времени"
             onMouseDown={(e) => e.preventDefault()}
             onClick={onOpenTimeMachine}
+            data-testid="wikiToolbar-timeMachineButton"
           >
             🕐
+          </button>
+        ) : null}
+        {onOpenAiHints ? (
+          <button
+            type="button"
+            className="tb-side tb-side--ai"
+            title="AI-подсказки (MWS GPT), Ctrl+Shift+A"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={onOpenAiHints}
+            data-testid="wikiToolbar-aiHintsButton"
+          >
+            ✨
           </button>
         ) : null}
       </div>

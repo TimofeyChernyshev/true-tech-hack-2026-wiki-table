@@ -37,9 +37,7 @@ export function RegisterPage() {
     <div className="auth-page">
       <div className="auth-card">
         <h1 className="auth-title">Регистрация</h1>
-        <p className="auth-hint">
-          Демо-регистрация: пароль сохраняется в открытом виде в браузере, только для прототипа.
-        </p>
+
         <form className="auth-form" onSubmit={onSubmit}>
           {error ? (
             <div className="auth-error" role="alert">

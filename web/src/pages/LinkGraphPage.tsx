@@ -201,9 +201,7 @@ export function LinkGraphPage() {
               <h1 className="wiki-graph-title">Граф связей</h1>
             </div>
             <p className="wiki-graph-hint">
-              Связи задаёте сами: в тексте вставьте ссылку на другую страницу (в диалоге ссылки укажите{' '}
-              <code className="wiki-graph-code">/p/ключ-страницы</code>
-              ). Узел — страница, стрелка — «эта страница ссылается на ту». Пустой граф значит, что пока нет таких ссылок между страницами из списка.
+              Демонстрация связей между страницами.
             </p>
             <button type="button" className="wiki-graph-shuffle secondary" onClick={() => setLayoutRev((x) => x + 1)}>
               Пересобрать укладку

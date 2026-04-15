@@ -33,9 +33,7 @@ export function LoginPage() {
     <div className="auth-page">
       <div className="auth-card">
         <h1 className="auth-title">Вход</h1>
-        <p className="auth-hint">
-          Заглушка: учётные записи хранятся только в <code>localStorage</code> этого браузера, без сервера.
-        </p>
+
         <form className="auth-form" onSubmit={onSubmit}>
           {error ? (
             <div className="auth-error" role="alert">

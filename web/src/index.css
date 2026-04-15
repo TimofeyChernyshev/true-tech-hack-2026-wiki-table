@@ -19,6 +19,9 @@
   --ui-avatar-violet: #b8a6f0;
   --ui-shadow-popover: 0 0 16px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.08);
 
+  /* Слои: модальные окна поверх основного UI */
+  --wiki-layer-modal: 12000;
+
   --font-compact: 'MTS Compact', 'MTS Text', system-ui, -apple-system, 'Segoe UI', Roboto,
     sans-serif;
   --font-wide: 'MTS Wide', 'MTS Compact', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;

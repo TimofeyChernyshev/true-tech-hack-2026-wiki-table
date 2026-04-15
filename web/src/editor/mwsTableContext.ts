@@ -76,6 +76,37 @@ export function findMwsTableAtSelection(editor: Editor): MwsTableAnchor | null {
   return null
 }
 
+/** Якорь MWS-таблицы по DOM-элементу `<table>` (например при hover). */
+export function findMwsTableAnchorFromElement(editor: Editor, tableEl: HTMLElement): MwsTableAnchor | null {
+  const view = editor.view
+  let pos: number
+  try {
+    pos = view.posAtDOM(tableEl, 0, 1)
+  } catch {
+    try {
+      pos = view.posAtDOM(tableEl, 0, -1)
+    } catch {
+      return null
+    }
+  }
+  const doc = editor.state.doc
+  const clamped = Math.max(0, Math.min(pos, doc.content.size))
+  const $pos = doc.resolve(clamped)
+  for (let d = $pos.depth; d >= 0; d -= 1) {
+    const n = $pos.node(d)
+    if (n.type.name !== 'table') continue
+    const parsed = parseMwsTableNode(n)
+    if (!parsed) return null
+    return { tablePos: $pos.before(d), tableNode: n, ...parsed }
+  }
+  return null
+}
+
+export function selectionInMwsTable(editor: Editor, tablePos: number): boolean {
+  const a = findMwsTableAtSelection(editor)
+  return a !== null && a.tablePos === tablePos
+}
+
 export function getMwsRowRecordId(editor: Editor): string | null {
   const { selection } = editor.state
   const $pos = selection.$from

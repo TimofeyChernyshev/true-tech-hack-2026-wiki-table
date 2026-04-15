@@ -9,7 +9,7 @@
 .wiki-editor-root .tiptap {
   outline: none;
   padding: 16px 18px 24px;
-  min-height: 180px;
+  min-height: 350px;
 }
 
 .wiki-editor-loading {
@@ -23,6 +23,7 @@
 .wiki-editor-prose .ProseMirror {
   user-select: text;
   -webkit-user-select: text;
+  height: 530px;
 }
 
 .wiki-bubble-menu {
@@ -470,5 +471,84 @@
 
 .wiki-editor-prose table.wiki-tiptap-table p {
   margin: 0;
+}
+
+/* AI-подсказки (MWS GPT) */
+.wiki-ai-hints-modal-root .wiki-modal-card--wide {
+  max-width: min(640px, 96vw);
+}
+
+.wiki-ai-hints-code {
+  font-size: 0.9em;
+}
+
+.wiki-ai-hints-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.wiki-ai-hints-label {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--dk-text-secondary, #5c656d);
+}
+
+.wiki-ai-hints-select {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.wiki-ai-hints-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.wiki-ai-hints-preset {
+  font-size: 13px;
+}
+
+.wiki-ai-hints-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 12px;
+  resize: vertical;
+  min-height: 120px;
+  font-family: inherit;
+  line-height: 1.45;
+}
+
+.wiki-ai-hints-actions-send {
+  margin-bottom: 8px;
+}
+
+.wiki-ai-hints-error {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--dk-danger, #c62828);
+}
+
+.wiki-ai-hints-reply {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  max-height: min(280px, 40vh);
+  overflow: auto;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--dk-toolbar-bg, #f5f7fa);
+  border: 1px solid var(--dk-border, #e0e0e0);
+  border-radius: 8px;
+  font-family: var(--font-compact, system-ui, sans-serif);
+}
+
+.tb-side--ai {
+  font-size: 15px;
 }
 

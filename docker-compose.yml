@@ -124,9 +124,10 @@ services:
     env_file:
       - .env
     ports:
-      - "${GPT_PORT:-8083}:${GPT_PORT:-8083}"
+      - "${GPT_PORT:-8083}:8083"
     environment:
-      - GPT_PORT=${GPT_PORT:-8083}
+      # Внутри сети Docker всегда 8083 (nginx `gpt:8083`); на хост маппится GPT_PORT.
+      - GPT_PORT=8083
       - MWS_GPT_BASE_URL=${MWS_GPT_BASE_URL}
       - MWS_GPT_API_KEY=${MWS_GPT_API_KEY}
       - MWS_GPT_REQUEST_TIMEOUT=${MWS_GPT_REQUEST_TIMEOUT:-60s}
@@ -135,7 +136,7 @@ services:
     networks:
       - wiki-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${GPT_PORT:-8083}/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -153,6 +154,8 @@ services:
       table:
         condition: service_healthy
       page:
+        condition: service_healthy
+      gpt:
         condition: service_healthy
     networks:
       - wiki-network

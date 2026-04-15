@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } from 'react'
 
+import { ModalShell } from '../components/shared/ModalShell'
+
 type Props = {
   open: boolean
   src: string
@@ -274,6 +276,8 @@ export function ImageCropModal({ open, src, onClose, onApply }: Props) {
 
   if (!open) return null
 
+  /* clientWidth нужен до полного sync display; обновляется через onLoad/ResizeObserver */
+  /* eslint-disable react-hooks/refs */
   const boxStyle =
     rect && (display.w > 0 || imgRef.current?.clientWidth)
       ? {
@@ -283,49 +287,54 @@ export function ImageCropModal({ open, src, onClose, onApply }: Props) {
           height: rect.h,
         }
       : undefined
+  /* eslint-enable react-hooks/refs */
 
   return (
-    <div className="wiki-modal-root" role="dialog" aria-modal="true" aria-labelledby={dlgId}>
-      <button type="button" className="wiki-modal-backdrop" aria-label="Закрыть" onClick={onClose} />
-      <div className="wiki-modal-card wiki-modal-card--wide">
-        <h2 id={dlgId} className="wiki-modal-title">
-          Обрезка изображения
-        </h2>
-        <p className="wiki-modal-hint">
-          Зажмите и тяните область; уже выбранную рамку можно перетаскивать. Размер в тексте по-прежнему меняется ручками
-          у края картинки.
-        </p>
-        {err ? <p className="wiki-modal-error">{err}</p> : null}
-        <div ref={wrapRef} className={`wiki-crop-wrap ${isDragging ? 'wiki-crop-wrap--drag' : ''}`}>
-          <img ref={imgRef} src={src} alt="Обрезка" className="wiki-crop-img" onLoad={onImgLoad} draggable={false} />
-          {display.w > 0 && display.h > 0 ? (
-            <div
-              ref={interactRef}
-              className="wiki-crop-interact"
-              style={{ width: display.w, height: display.h }}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
-            />
-          ) : null}
-          {boxStyle && !err ? <div className="wiki-crop-box" style={boxStyle as CSSProperties} /> : null}
-        </div>
-        <div className="wiki-modal-actions">
-          <button type="button" className="secondary" onMouseDown={(e) => e.preventDefault()} onClick={onClose}>
-            Отмена
-          </button>
-          <button
-            type="button"
-            className="primary"
-            disabled={!!err || !rect || rect.w < 4 || rect.h < 4}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => applyCrop()}
-          >
-            Применить обрезку
-          </button>
-        </div>
+    <ModalShell open={open} onBackdropClose={onClose} ariaLabelledBy={dlgId} cardClassName="wiki-modal-card--wide">
+      <h2 id={dlgId} className="wiki-modal-title">
+        Обрезка изображения
+      </h2>
+      <p className="wiki-modal-hint">
+        Зажмите и тяните область; уже выбранную рамку можно перетаскивать. Размер в тексте по-прежнему меняется ручками
+        у края картинки.
+      </p>
+      {err ? <p className="wiki-modal-error">{err}</p> : null}
+      <div ref={wrapRef} className={`wiki-crop-wrap ${isDragging ? 'wiki-crop-wrap--drag' : ''}`}>
+        <img ref={imgRef} src={src} alt="Обрезка" className="wiki-crop-img" onLoad={onImgLoad} draggable={false} />
+        {display.w > 0 && display.h > 0 ? (
+          <div
+            ref={interactRef}
+            className="wiki-crop-interact"
+            style={{ width: display.w, height: display.h }}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+          />
+        ) : null}
+        {boxStyle && !err ? <div className="wiki-crop-box" style={boxStyle as CSSProperties} /> : null}
       </div>
-    </div>
+      <div className="wiki-modal-actions">
+        <button
+          type="button"
+          className="secondary"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={onClose}
+          data-testid="imageCropModal-cancelButton"
+        >
+          Отмена
+        </button>
+        <button
+          type="button"
+          className="primary"
+          disabled={!!err || !rect || rect.w < 4 || rect.h < 4}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => applyCrop()}
+          data-testid="imageCropModal-applyButton"
+        >
+          Применить обрезку
+        </button>
+      </div>
+    </ModalShell>
   )
 }

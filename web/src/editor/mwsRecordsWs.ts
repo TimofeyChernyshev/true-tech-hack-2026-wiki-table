@@ -60,6 +60,16 @@ function decodeWsPayload(data: string | ArrayBuffer): string {
   return new TextDecoder('utf-8').decode(data)
 }
 
+/** Слить несколько дельт по одной записи в один объект fields. */
+function mergeRecordUpdatesBatch(updates: MwsRecordUpdate[]): MwsRecordUpdate[] {
+  const byRec = new Map<string, Record<string, unknown>>()
+  for (const u of updates) {
+    const prev = byRec.get(u.recordId) ?? {}
+    byRec.set(u.recordId, { ...prev, ...u.fields })
+  }
+  return [...byRec.entries()].map(([recordId, fields]) => ({ recordId, fields }))
+}
+
 /**
  * Один сокет на dstId: отправка JSON-массива RecordUpdate, приём того же формата.
  */
@@ -70,6 +80,8 @@ export class MwsRecordsWsClient {
   private readonly viewId: string
   private readonly spaceId: string | null
   private readonly wsBase: string
+  /** Пока сокет в CONNECTING, дельты не теряем — уйдут в onopen. */
+  private pendingOut: MwsRecordUpdate[] = []
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private closedByUser = false
 
@@ -94,6 +106,7 @@ export class MwsRecordsWsClient {
 
   disconnect(): void {
     this.closedByUser = true
+    this.pendingOut = []
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
@@ -110,11 +123,28 @@ export class MwsRecordsWsClient {
 
   /** Отправить дельту; сервер рассылает остальным и периодически пишет в MWS Tables. */
   sendUpdates(updates: MwsRecordUpdate[]): void {
-    if (!updates.length || !this.isOpen) return
+    if (!updates.length) return
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      try {
+        this.ws.send(JSON.stringify(updates))
+      } catch {
+        /* ignore */
+      }
+      return
+    }
+    this.pendingOut.push(...updates)
+  }
+
+  private flushPendingOut(): void {
+    if (!this.pendingOut.length) return
+    if (this.ws?.readyState !== WebSocket.OPEN) return
+    const merged = mergeRecordUpdatesBatch(this.pendingOut)
+    this.pendingOut = []
     try {
-      this.ws!.send(JSON.stringify(updates))
+      this.ws.send(JSON.stringify(merged))
     } catch {
-      /* ignore */
+      /* вернём в очередь при сбое */
+      this.pendingOut = merged
     }
   }
 
@@ -132,6 +162,7 @@ export class MwsRecordsWsClient {
     this.ws = socket
 
     socket.onopen = () => {
+      this.flushPendingOut()
       this.handlers.onOpen?.()
     }
 

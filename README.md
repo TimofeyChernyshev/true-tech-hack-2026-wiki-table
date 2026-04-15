@@ -20,19 +20,17 @@
 
 Файл `.env` в корне репозитория подхватывается процессом бэкенда и `docker compose` (при необходимости ищется также в родительских каталогах — см. код загрузки окружения).
 
-### Основные переменные
+### ПРИМЕР .env
 
-| Переменная                   | Назначение                                                                          |
-|------------------------------|-------------------------------------------------------------------------------------|
-| `MWS_TABLES_BASE_URL`        | Базовый URL MWS Fusion Tables (без дублирования суффикса `/fusion/v1`)              |
-| `MWS_API_KEY`                | Ключ доступа к API MWS Tables                                                       |
-| `HTTP_PORT`                  | Порт HTTP-сервера бэкенда внутри контейнера/процесса (по умолчанию `8080`)          |
-| `BACKEND_PORT`               | Порт на хосте для проброса к бэкенду в Docker Compose (по умолчанию `8080`)         |
-| `FRONTEND_PORT`              | Порт веб-интерфейса в Docker Compose (по умолчанию `3000`)                          |
-| `WIKI_DATA_DIR`              | Каталог JSON-файлов wiki; в Docker по умолчанию `/app/data/wiki` (том `wiki-pages`) |
-| `ALLOW_ORIGINS`              | CORS: список origin через запятую; при пустом значении допускаются все origin       |
-|                              |  (удобно для локальной разработки)                                                  |
-| `MWS_TABLES_REQUEST_TIMEOUT` | Таймаут запросов к MWS (по умолчанию `60s`)                                         |
+MWS_TABLES_BASE_URL=https://tables.mws.ru
+MWS_API_KEY=ВАШ_КЛЮЧ
+MWS_TABLES_REQUEST_TIMEOUT=60s
+ALLOW_ORIGINS=http://localhost:3000,http://localhost:5173
+TABLE_PORT=8080
+
+PAGE_PORT=8081
+MWS_GPT_API_KEY=ВАШ_КЛЮЧ
+MWS_GPT_BASE_URL=https://api.gpt.mws.ru
 
 ### Фронтенд (только `npm run dev`)
 

@@ -1,7 +1,7 @@
 import type { Editor, JSONContent } from '@tiptap/core'
 
 import { fetchAllTableRecords } from '../api/tableRecords'
-import { findMwsTableAtSelection, type MwsTableAnchor } from './mwsTableContext'
+import { findMwsTableAtSelection, parseMwsTableNode, type MwsTableAnchor } from './mwsTableContext'
 import { tableResponseToTiptapJson } from './mwsTable'
 
 function replaceTableNode(editor: Editor, anchor: MwsTableAnchor, json: JSONContent) {
@@ -12,15 +12,23 @@ function replaceTableNode(editor: Editor, anchor: MwsTableAnchor, json: JSONCont
   editor.view.dispatch(tr)
 }
 
+/** Перечитать данные MWS и заменить узел таблицы по известному якорю (в т.ч. при hover без курсора в ячейке). */
+export async function refreshMwsTableAtAnchor(editor: Editor, anchor: MwsTableAnchor): Promise<void> {
+  const data = await fetchAllTableRecords(anchor.dstId, anchor.viewId || undefined)
+  const docJson = tableResponseToTiptapJson(data, anchor.dstId, anchor.viewId, {
+    mwsSpaceId: anchor.spaceId ?? undefined,
+  })
+  const node = editor.state.doc.nodeAt(anchor.tablePos)
+  if (!node || node.type.name !== 'table') return
+  const parsed = parseMwsTableNode(node)
+  if (!parsed || parsed.dstId !== anchor.dstId) return
+  const nextAnchor: MwsTableAnchor = { tablePos: anchor.tablePos, tableNode: node, ...parsed }
+  replaceTableNode(editor, nextAnchor, docJson)
+}
+
 /** Перечитать данные MWS и заменить узел таблицы под курсором (после create/delete записей или полей). */
 export async function refreshMwsTableAtCursor(editor: Editor): Promise<void> {
   const before = findMwsTableAtSelection(editor)
   if (!before) return
-  const data = await fetchAllTableRecords(before.dstId, before.viewId || undefined)
-  const docJson = tableResponseToTiptapJson(data, before.dstId, before.viewId, {
-    mwsSpaceId: before.spaceId ?? undefined,
-  })
-  const after = findMwsTableAtSelection(editor)
-  if (!after || after.dstId !== before.dstId) return
-  replaceTableNode(editor, after, docJson)
+  await refreshMwsTableAtAnchor(editor, before)
 }

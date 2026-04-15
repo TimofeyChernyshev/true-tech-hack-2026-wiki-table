@@ -1,4 +1,6 @@
 import type { JSONContent } from '@tiptap/core'
+
+import { ModalShell } from '../components/shared/ModalShell'
 import type { DocVersionEntry } from './docVersionsStore'
 
 type Props = {
@@ -20,20 +22,21 @@ export function TimeMachineModal({
   onRestore,
   onSnapshotNow,
 }: Props) {
-  if (!open) return null
-
   return (
-    <div className="wiki-modal-root" role="dialog" aria-modal="true" aria-labelledby="wiki-tm-title">
-      <button type="button" className="wiki-modal-backdrop" aria-label="Закрыть" onClick={onClose} />
-      <div className="wiki-modal-card wiki-modal-card--wide">
-        <div className="wiki-tm-head">
-          <h2 id="wiki-tm-title" className="wiki-modal-title">
-            Машина времени
-          </h2>
-          <button type="button" className="secondary wiki-tm-snap" onClick={onSnapshotNow}>
-            Снимок сейчас
-          </button>
-        </div>
+    <ModalShell open={open} onBackdropClose={onClose} ariaLabelledBy="wiki-tm-title" cardClassName="wiki-modal-card--wide">
+      <div className="wiki-tm-head">
+        <h2 id="wiki-tm-title" className="wiki-modal-title">
+          Машина времени
+        </h2>
+        <button
+          type="button"
+          className="secondary wiki-tm-snap"
+          onClick={onSnapshotNow}
+          data-testid="timeMachineModal-snapshotButton"
+        >
+          Снимок сейчас
+        </button>
+      </div>
         <p className="wiki-modal-hint">
           Локальные версии документа (браузер). Откат заменяет текущий текст; отмена — стрелкой «Назад» в
           редакторе, если шаг ещё в истории.
@@ -52,6 +55,7 @@ export function TimeMachineModal({
                     onRestore(v.doc)
                     onClose()
                   }}
+                  data-testid="timeMachineModal-restoreButton"
                 >
                   Откатить сюда
                 </button>
@@ -59,12 +63,11 @@ export function TimeMachineModal({
             ))
           )}
         </ul>
-        <div className="wiki-modal-actions wiki-modal-actions--single">
-          <button type="button" className="secondary" onClick={onClose}>
-            Закрыть
-          </button>
-        </div>
+      <div className="wiki-modal-actions wiki-modal-actions--single">
+        <button type="button" className="secondary" onClick={onClose} data-testid="timeMachineModal-closeButton">
+          Закрыть
+        </button>
       </div>
-    </div>
+    </ModalShell>
   )
 }

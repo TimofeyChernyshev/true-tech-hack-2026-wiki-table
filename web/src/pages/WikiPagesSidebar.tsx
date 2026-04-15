@@ -25,7 +25,12 @@ export function WikiPagesSidebar({
     <aside className="wiki-pages-sidebar" aria-label="Страницы">
       <div className="wiki-pages-sidebar-head">
         <span className="wiki-pages-sidebar-title">Страницы</span>
-        <button type="button" className="wiki-pages-sidebar-new" onClick={onCreatePage}>
+        <button
+          type="button"
+          className="wiki-pages-sidebar-new"
+          onClick={onCreatePage}
+          data-testid="wikiPagesSidebar-newPageButton"
+        >
           + Новая
         </button>
       </div>
@@ -35,16 +40,7 @@ export function WikiPagesSidebar({
           className={({ isActive }) =>
             `wiki-pages-sidebar-graph${isActive ? ' wiki-pages-sidebar-graph--active' : ''}`
           }
-        >
-          Граф связей
-        </NavLink>
-      </div>
-      <div className="wiki-pages-sidebar-graph-row">
-        <NavLink
-          to="/graph"
-          className={({ isActive }) =>
-            `wiki-pages-sidebar-graph${isActive ? ' wiki-pages-sidebar-graph--active' : ''}`
-          }
+          data-testid="wikiPagesSidebar-graphLink"
         >
           Граф связей
         </NavLink>
@@ -58,6 +54,7 @@ export function WikiPagesSidebar({
                 className={({ isActive }) =>
                   `wiki-pages-sidebar-link${isActive ? ' wiki-pages-sidebar-link--active' : ''}`
                 }
+                data-testid={`wikiPagesSidebar-pageLink-${p.key}`}
               >
                 <span className="wiki-pages-sidebar-link-text">{p.title}</span>
                 <span className="wiki-pages-sidebar-link-key">{p.key}</span>
@@ -83,6 +80,7 @@ export function WikiPagesSidebar({
                     className={({ isActive }) =>
                       `wiki-pages-sidebar-link${isActive ? ' wiki-pages-sidebar-link--active' : ''}`
                     }
+                    data-testid={`wikiPagesSidebar-backlinkLink-${key}`}
                   >
                     <span className="wiki-pages-sidebar-link-text">{titleByKey.get(key) ?? key}</span>
                     <span className="wiki-pages-sidebar-link-key">{key}</span>
@@ -112,6 +110,7 @@ export function PagesSidebarToggle({
       aria-expanded={expanded}
       aria-label={expanded ? 'Скрыть список страниц' : 'Показать список страниц'}
       title={expanded ? 'Скрыть список страниц' : 'Показать список страниц'}
+      data-testid="pagesSidebarToggle-toggleButton"
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
         <path

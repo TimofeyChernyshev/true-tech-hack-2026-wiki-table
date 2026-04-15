@@ -1,5 +1,7 @@
 import { useCallback, useId, useRef, useState } from 'react'
 
+import { ModalShell } from '../components/shared/ModalShell'
+
 const ACCEPT = 'image/png,image/jpeg,image/jpg,image/gif'
 const MAX_BYTES = 12 * 1024 * 1024
 
@@ -89,52 +91,48 @@ export function ImageInsertModal({ open, onClose, onConfirm }: Props) {
     reader.readAsDataURL(file)
   }, [file, preview, naturalW, onConfirm, handleClose])
 
-  if (!open) return null
-
   return (
-    <div className="wiki-modal-root" role="dialog" aria-modal="true" aria-labelledby={inputId + '-title'}>
-      <button type="button" className="wiki-modal-backdrop" aria-label="Закрыть" onClick={handleClose} />
-      <div className="wiki-modal-card">
-        <h2 id={inputId + '-title'} className="wiki-modal-title">
-          Вставка изображения
-        </h2>
-        <p className="wiki-modal-hint">Форматы: PNG, JPG, GIF</p>
-        <label className="wiki-modal-file-label">
-          <span className="wiki-modal-file-btn">Выбрать файл</span>
-          <input
-            id={inputId}
-            type="file"
-            accept={ACCEPT}
-            className="wiki-modal-file-input"
-            onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+    <ModalShell open={open} onBackdropClose={handleClose} ariaLabelledBy={inputId + '-title'}>
+      <h2 id={inputId + '-title'} className="wiki-modal-title">
+        Вставка изображения
+      </h2>
+      <p className="wiki-modal-hint">Форматы: PNG, JPG, GIF</p>
+      <label className="wiki-modal-file-label">
+        <span className="wiki-modal-file-btn">Выбрать файл</span>
+        <input
+          id={inputId}
+          type="file"
+          accept={ACCEPT}
+          className="wiki-modal-file-input"
+          onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+          data-testid="imageInsertModal-fileInput"
+        />
+      </label>
+      {file ? (
+        <p className="wiki-modal-meta">
+          {file.name} · {formatBytes(file.size)}
+          {naturalW > 0 ? ` · ${naturalW}×${naturalH} px` : null}
+        </p>
+      ) : null}
+      {err ? <p className="wiki-modal-error">{err}</p> : null}
+      {preview ? (
+        <div className="wiki-modal-preview-wrap">
+          <img
+            src={preview}
+            alt=""
+            className="wiki-modal-preview-img"
+            onLoad={onImgLoad}
           />
-        </label>
-        {file ? (
-          <p className="wiki-modal-meta">
-            {file.name} · {formatBytes(file.size)}
-            {naturalW > 0 ? ` · ${naturalW}×${naturalH} px` : null}
-          </p>
-        ) : null}
-        {err ? <p className="wiki-modal-error">{err}</p> : null}
-        {preview ? (
-          <div className="wiki-modal-preview-wrap">
-            <img
-              src={preview}
-              alt=""
-              className="wiki-modal-preview-img"
-              onLoad={onImgLoad}
-            />
-          </div>
-        ) : null}
-        <div className="wiki-modal-actions">
-          <button type="button" className="secondary" onClick={handleClose}>
-            Отмена
-          </button>
-          <button type="button" className="primary" disabled={!file} onClick={confirm}>
-            Вставить
-          </button>
         </div>
+      ) : null}
+      <div className="wiki-modal-actions">
+        <button type="button" className="secondary" onClick={handleClose} data-testid="imageInsertModal-cancelButton">
+          Отмена
+        </button>
+        <button type="button" className="primary" disabled={!file} onClick={confirm} data-testid="imageInsertModal-confirmButton">
+          Вставить
+        </button>
       </div>
-    </div>
+    </ModalShell>
   )
 }
