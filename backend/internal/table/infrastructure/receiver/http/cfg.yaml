@@ -1,0 +1,6 @@
+package: tableshttp
+generate:
+  gin-server: true
+  models: true
+  embedded-spec: true
+output: server.gen.go

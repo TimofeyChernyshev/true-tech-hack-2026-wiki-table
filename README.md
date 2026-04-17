@@ -1,93 +1,116 @@
-# template
+# Task-repo
 
-Template for task: Репозиторий для работы
+Монорепозиторий веб-приложения для работы с wiki-документами (TipTap), локальным хранением страниц и интеграцией с **MWS Fusion Tables**. Состоит из HTTP-бэкенда на Go и клиента на React (Vite).
 
-## Getting started
+## Состав
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+| Компонент          | Описание                                                                    |
+|--------------------|-----------------------------------------------------------------------------|
+| `backend/`         | REST API: wiki-страницы (JSON), прокси к MWS Tables, healthcheck            |
+| `web/`             | SPA: редактор документа, таблицы записей, комментарии (локально в браузере) |
+| `api/`             | OpenAPI-спецификации (`back-front.yaml` и др.)                              |
+| `backend/internal/httpapi` | Доп. HTTP-хелперы (например контракт `back-front.yaml` для записей таблицы)   |
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## Требования
 
-## Add your files
+- **Docker** и Docker Compose — для контейнерного запуска.
+- Либо **Go** (модуль `backend`) и **Node.js** — для локальной разработки без Docker для выбранного слоя.
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+## Конфигурация
 
+Файл `.env` в корне репозитория подхватывается процессом бэкенда и `docker compose` (при необходимости ищется также в родительских каталогах — см. код загрузки окружения).
+
+### ПРИМЕР .env
+
+MWS_TABLES_BASE_URL=https://tables.mws.ru
+MWS_API_KEY=ВАШ_КЛЮЧ
+MWS_TABLES_REQUEST_TIMEOUT=60s
+ALLOW_ORIGINS=http://localhost:3000,http://localhost:5173
+TABLE_PORT=8080
+
+PAGE_PORT=8081
+MWS_GPT_API_KEY=ВАШ_КЛЮЧ
+MWS_GPT_BASE_URL=https://api.gpt.mws.ru
+
+### Фронтенд (только `npm run dev`)
+
+Если бэкенд слушает не `127.0.0.1:8080`, задайте цель прокси в `web/.env.development.local` (см. `web/.env.example`, переменная `VITE_API_PROXY_TARGET`).
+
+## Запуск
+
+### Полный стек в Docker
+
+Из корня репозитория:
+
+```shell
+docker compose up --build
 ```
-cd existing_repo
-git remote add origin https://git.truetecharena.ru/tta/true-tech-hack2026-wikilive/template.git
-git branch -M main
-git push -uf origin main
+
+После старта: веб-интерфейс — `http://localhost:${FRONTEND_PORT:-3000}`, API бэкенда — `http://localhost:${BACKEND_PORT:-8080}` (проверка готовности: `GET /health`).
+
+### Только бэкенд в Docker и Vite на хосте
+
+1. Убедитесь, что в корне есть `.env` с `MWS_TABLES_BASE_URL` и `MWS_API_KEY` (при необходимости скорректируйте `HTTP_PORT` / `BACKEND_PORT`).
+2. Запустите бэкенд и дождитесь успешного healthcheck:
+
+   ```shell
+   docker compose up -d --build backend
+   ```
+
+3. Проверьте: `http://127.0.0.1:8080/health` (или ваш `BACKEND_PORT`).
+4. В отдельном терминале:
+
+   ```shell
+   cd web
+   npm install
+   npm run dev
+   ```
+
+Запросы с фронта к `/api` проксируются на `VITE_API_PROXY_TARGET` или на `http://127.0.0.1:8080` по умолчанию.
+
+### Локальный запуск без Docker
+
+1. Бэкенд (рабочая директория влияет на путь по умолчанию для данных wiki):
+
+   ```shell
+   cd backend
+   go run ./cmd/task
+   ```
+
+2. Фронтенд:
+
+   ```shell
+   cd web
+   npm install
+   npm run dev
+   ```
+
+## API
+
+### Wiki (документ TipTap)
+
+| Метод | Путь                           | Описание                                                                |
+|-------|--------------------------------|-------------------------------------------------------------------------|
+| `GET` | `/api/v1/wiki/pages/{pageKey}` | JSON корня документа `{ "type": "doc", ... }`; `404`, если страницы нет |
+| `PUT` | `/api/v1/wiki/pages/{pageKey}` | Сохранение того же JSON; ответ `204` при успехе                         |
+
+`pageKey` — только символы `a-zA-Z0-9._-` (например `wiki-doc-main`).
+
+### Таблицы MWS
+
+Маршруты согласованы со спецификацией `api/back-front.yaml` (например `GET` / `PATCH` / `POST` / `DELETE` для `/api/v1/tables/{dstId}/records`). При ответах Fusion без поля `total` бэкенд может догружать страницы до заполнения ожидаемого размера страницы.
+
+### Примечание по OpenAPI и MWS
+
+В части схем для полей записей в спецификациях допускается обобщённый тип `object`. Для фактических вызовов MWS Tables тип тел запросов (в том числе `UpdateRecordsRequest`) приведён к ожидаемому контракту API Fusion.
+
+## Сборка фронтенда
+
+```shell
+cd web
+npm run build
 ```
 
-## Integrate with your tools
+Артефакты — в `web/dist`. Образ `web` в Compose собирает production-версию и отдаёт её через nginx.
 
-- [ ] [Set up project integrations](https://git.truetecharena.ru/tta/true-tech-hack2026-wikilive/template/-/settings/integrations)
-
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+Дополнительные контракты и примеры — в каталоге `api/`.

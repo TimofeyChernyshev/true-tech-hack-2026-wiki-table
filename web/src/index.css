@@ -1,0 +1,68 @@
+/* Токены Design Kit «Страницы» (Figma GUEr88JKOFdfSjPEndNEBH, node 1:19397) */
+:root {
+  --dk-text-primary: #1d2023;
+  --dk-text-tertiary: #969fa8;
+  --dk-border: #e0e0e0;
+  --dk-toolbar-bg: #f5f7fa;
+  --dk-control-border: #d7d9dd;
+  --dk-control-fill: #f0f1f3;
+  --dk-bg: #ffffff;
+  --dk-accent-icon: #e30613;
+
+  /* UI kit из Figma (раздел «Комментарии», MCP) */
+  --ui-bg-secondary: #f6f7fa;
+  --ui-line-light: #e0e3e9;
+  --ui-text-primary-ui: #282c33;
+  --ui-text-secondary: #6d7482;
+  --ui-action: #907ff0;
+  --ui-avatar-blue: #7eb8da;
+  --ui-avatar-violet: #b8a6f0;
+  --ui-shadow-popover: 0 0 16px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.08);
+
+  /* Слои: модальные окна поверх основного UI */
+  --wiki-layer-modal: 12000;
+
+  --font-compact: 'MTS Compact', 'MTS Text', system-ui, -apple-system, 'Segoe UI', Roboto,
+    sans-serif;
+  --font-wide: 'MTS Wide', 'MTS Compact', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  font-family: var(--font-compact);
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--dk-text-primary);
+  background: var(--dk-bg);
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+body {
+  margin: 0;
+}
+
+p {
+  margin: 0;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.875em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--dk-toolbar-bg);
+  color: var(--dk-text-primary);
+}
